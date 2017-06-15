@@ -164,6 +164,7 @@ enum ValueType {
   DELIMITED_DECIMAL = 9,
   DURATION = 6,
   TUPLE = 10,
+  ARRAY = 11,
   TIMESERIES = 100
 };
 bool ValueType_IsValid(int value);

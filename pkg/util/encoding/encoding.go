@@ -860,6 +860,7 @@ const (
 	True
 	False
 	UUID
+	Array
 	SentinelType Type = 15 // Used in the Value encoding.
 )
 
@@ -1186,6 +1187,12 @@ func EncodeBoolValue(appendTo []byte, colID uint32, b bool) []byte {
 // returns the final buffer.
 func EncodeIntValue(appendTo []byte, colID uint32, i int64) []byte {
 	appendTo = encodeValueTag(appendTo, colID, Int)
+	return EncodeUntaggedIntValue(appendTo, i)
+}
+
+// EncodeUntaggedIntValue encodes an int value, appends it to the supplied buffer, and
+// returns the final buffer.
+func EncodeUntaggedIntValue(appendTo []byte, i int64) []byte {
 	return EncodeNonsortingStdlibVarint(appendTo, i)
 }
 
@@ -1195,6 +1202,12 @@ const floatValueEncodedLength = uint64AscendingEncodedLength
 // and returns the final buffer.
 func EncodeFloatValue(appendTo []byte, colID uint32, f float64) []byte {
 	appendTo = encodeValueTag(appendTo, colID, Float)
+	return EncodeUntaggedFloatValue(appendTo, f)
+}
+
+// EncodeUntaggedFloatValue encodes a float value, appends it to the supplied buffer,
+// and returns the final buffer.
+func EncodeUntaggedFloatValue(appendTo []byte, f float64) []byte {
 	return EncodeUint64Ascending(appendTo, math.Float64bits(f))
 }
 
@@ -1202,6 +1215,12 @@ func EncodeFloatValue(appendTo []byte, colID uint32, f float64) []byte {
 // buffer, and returns the final buffer.
 func EncodeBytesValue(appendTo []byte, colID uint32, data []byte) []byte {
 	appendTo = encodeValueTag(appendTo, colID, Bytes)
+	return EncodeUntaggedBytesValue(appendTo, data)
+}
+
+// EncodeUntaggedBytesValue encodes a byte array value, appends it to the supplied
+// buffer, and returns the final buffer.
+func EncodeUntaggedBytesValue(appendTo []byte, data []byte) []byte {
 	appendTo = EncodeNonsortingUvarint(appendTo, uint64(len(data)))
 	return append(appendTo, data...)
 }
@@ -1210,6 +1229,12 @@ func EncodeBytesValue(appendTo []byte, colID uint32, data []byte) []byte {
 // and returns the final buffer.
 func EncodeTimeValue(appendTo []byte, colID uint32, t time.Time) []byte {
 	appendTo = encodeValueTag(appendTo, colID, Time)
+	return EncodeUntaggedTimeValue(appendTo, t)
+}
+
+// EncodeUntaggedTimeValue encodes a time.Time value, appends it to the supplied buffer,
+// and returns the final buffer.
+func EncodeUntaggedTimeValue(appendTo []byte, t time.Time) []byte {
 	appendTo = EncodeNonsortingStdlibVarint(appendTo, t.Unix())
 	return EncodeNonsortingStdlibVarint(appendTo, int64(t.Nanosecond()))
 }
@@ -1218,6 +1243,12 @@ func EncodeTimeValue(appendTo []byte, colID uint32, t time.Time) []byte {
 // buffer, and returns the final buffer.
 func EncodeDecimalValue(appendTo []byte, colID uint32, d *apd.Decimal) []byte {
 	appendTo = encodeValueTag(appendTo, colID, Decimal)
+	return EncodeUntaggedDecimalValue(appendTo, d)
+}
+
+// EncodeUntaggedDecimalValue encodes an apd.Decimal value, appends it to the supplied
+// buffer, and returns the final buffer.
+func EncodeUntaggedDecimalValue(appendTo []byte, d *apd.Decimal) []byte {
 	// To avoid the allocation, leave space for the varint, encode the decimal,
 	// encode the varint, and shift the encoded decimal to the end of the
 	// varint.
@@ -1236,6 +1267,12 @@ func EncodeDecimalValue(appendTo []byte, colID uint32, d *apd.Decimal) []byte {
 // supplied buffer, and returns the final buffer.
 func EncodeDurationValue(appendTo []byte, colID uint32, d duration.Duration) []byte {
 	appendTo = encodeValueTag(appendTo, colID, Duration)
+	return EncodeUntaggedDurationValue(appendTo, d)
+}
+
+// EncodeUntaggedDurationValue encodes a duration.Duration value, appends it to the
+// supplied buffer, and returns the final buffer.
+func EncodeUntaggedDurationValue(appendTo []byte, d duration.Duration) []byte {
 	appendTo = EncodeNonsortingStdlibVarint(appendTo, d.Months)
 	appendTo = EncodeNonsortingStdlibVarint(appendTo, d.Days)
 	return EncodeNonsortingStdlibVarint(appendTo, d.Nanos)
@@ -1245,6 +1282,12 @@ func EncodeDurationValue(appendTo []byte, colID uint32, d duration.Duration) []b
 // and returns the final buffer.
 func EncodeUUIDValue(appendTo []byte, colID uint32, u uuid.UUID) []byte {
 	appendTo = encodeValueTag(appendTo, colID, UUID)
+	return EncodeUntaggedUUIDValue(appendTo, u)
+}
+
+// EncodeUntaggedUUIDValue encodes a uuid.UUID value, appends it to the supplied buffer,
+// and returns the final buffer.
+func EncodeUntaggedUUIDValue(appendTo []byte, u uuid.UUID) []byte {
 	return append(appendTo, u.GetBytes()...)
 }
 
@@ -1317,6 +1360,11 @@ func DecodeIntValue(b []byte) (remaining []byte, i int64, err error) {
 	if err != nil {
 		return b, 0, err
 	}
+	return DecodeUntaggedIntValue(b)
+}
+
+// DecodeUntaggedIntValue decodes a value encoded by EncodeIntValue.
+func DecodeUntaggedIntValue(b []byte) (remaining []byte, i int64, err error) {
 	b, _, i, err = DecodeNonsortingStdlibVarint(b)
 	return b, i, err
 }
@@ -1327,6 +1375,11 @@ func DecodeFloatValue(b []byte) (remaining []byte, f float64, err error) {
 	if err != nil {
 		return b, 0, err
 	}
+	return DecodeUntaggedFloatValue(b)
+}
+
+// DecodeUntaggedFloatValue decodes a value encoded by EncodeFloatValue without a value tag.
+func DecodeUntaggedFloatValue(b []byte) (remaining []byte, f float64, err error) {
 	if len(b) < 8 {
 		return b, 0, fmt.Errorf("float64 value should be exactly 8 bytes: %d", len(b))
 	}
@@ -1341,6 +1394,11 @@ func DecodeBytesValue(b []byte) (remaining []byte, data []byte, err error) {
 	if err != nil {
 		return b, nil, err
 	}
+	return DecodeUntaggedBytesValue(b)
+}
+
+// DecodeUntaggedBytesValue decodes a value encoded by EncodeBytesValue, without the value tag.
+func DecodeUntaggedBytesValue(b []byte) (remaining, data []byte, err error) {
 	var i uint64
 	b, _, i, err = DecodeNonsortingUvarint(b)
 	if err != nil {
@@ -1355,6 +1413,11 @@ func DecodeTimeValue(b []byte) (remaining []byte, t time.Time, err error) {
 	if err != nil {
 		return b, time.Time{}, err
 	}
+	return DecodeUntaggedTimeValue(b)
+}
+
+// DecodeUntaggedTimeValue decodes a value encoded by EncodeTimeValue without a value tag.
+func DecodeUntaggedTimeValue(b []byte) (remaining []byte, t time.Time, err error) {
 	var sec, nsec int64
 	b, _, sec, err = DecodeNonsortingStdlibVarint(b)
 	if err != nil {
@@ -1373,6 +1436,11 @@ func DecodeDecimalValue(b []byte) (remaining []byte, d apd.Decimal, err error) {
 	if err != nil {
 		return b, apd.Decimal{}, err
 	}
+	return DecodeUntaggedDecimalValue(b)
+}
+
+// DecodeUntaggedDecimalValue decodes a value encoded by EncodeDecimalValue without a value tag.
+func DecodeUntaggedDecimalValue(b []byte) (remaining []byte, d apd.Decimal, err error) {
 	var i uint64
 	b, _, i, err = DecodeNonsortingStdlibUvarint(b)
 	if err != nil {
@@ -1388,6 +1456,11 @@ func DecodeDurationValue(b []byte) (remaining []byte, d duration.Duration, err e
 	if err != nil {
 		return b, duration.Duration{}, err
 	}
+	return DecodeUntaggedDurationValue(b)
+}
+
+// DecodeUntaggedDurationValue decodes a value encoded by EncodeDurationValue.
+func DecodeUntaggedDurationValue(b []byte) (remaining []byte, d duration.Duration, err error) {
 	var months, days, nanos int64
 	b, _, months, err = DecodeNonsortingStdlibVarint(b)
 	if err != nil {
@@ -1414,6 +1487,11 @@ func DecodeUUIDValue(b []byte) (remaining []byte, u uuid.UUID, err error) {
 	if err != nil {
 		return b, u, err
 	}
+	return DecodeUntaggedUUIDValue(b)
+}
+
+// DecodeUntaggedUUIDValue decodes a value encoded by EncodeUUIDValue without a value tag.
+func DecodeUntaggedUUIDValue(b []byte) (remaining []byte, u uuid.UUID, err error) {
 	u, err = uuid.FromBytes(b[:uuidValueEncodedLength])
 	if err != nil {
 		return b, uuid.UUID{}, err

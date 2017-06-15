@@ -61,6 +61,7 @@ enum ValueType {
   // TUPLE represents a DTuple, encoded as repeated pairs of varint field number
   // followed by a value encoded Datum.
   TUPLE = 10;
+  ARRAY = 11;
 
   // TIMESERIES is applied to values which contain InternalTimeSeriesData.
   TIMESERIES = 100;

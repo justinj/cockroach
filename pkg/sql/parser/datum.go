@@ -37,6 +37,7 @@ import (
 	"github.com/cockroachdb/apd"
 	"github.com/cockroachdb/cockroach/pkg/roachpb"
 	"github.com/cockroachdb/cockroach/pkg/util/duration"
+	"github.com/cockroachdb/cockroach/pkg/util/encoding"
 	"github.com/cockroachdb/cockroach/pkg/util/uuid"
 )
 
@@ -2147,6 +2148,16 @@ func (d *DArray) Size() uintptr {
 		sz += dsz
 	}
 	return sz
+}
+
+func typeTagForType(t Type) encoding.Type {
+	switch t {
+	case TypeInt:
+		return encoding.Int
+	case TypeString:
+		return encoding.Bytes
+	}
+	panic("unknown type t")
 }
 
 var errNonHomogeneousArray = errors.New("multidimensional arrays must have array expressions with matching dimensions")

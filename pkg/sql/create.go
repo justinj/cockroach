@@ -1241,14 +1241,14 @@ func MakeTableDesc(
 
 	for _, def := range n.Defs {
 		if d, ok := def.(*parser.ColumnTableDef); ok {
-			if !desc.IsVirtualTable() {
-				if _, ok := d.Type.(*parser.ArrayColType); ok {
-					return desc, pgerror.UnimplementedWithIssueErrorf(2115, "ARRAY column types are unsupported")
-				}
-				if _, ok := d.Type.(*parser.VectorColType); ok {
-					return desc, pgerror.UnimplementedWithIssueErrorf(2115, "VECTOR column types are unsupported")
-				}
-			}
+			// if !desc.IsVirtualTable() {
+			// 	if _, ok := d.Type.(*parser.ArrayColType); ok {
+			// 		return desc, pgerror.UnimplementedWithIssueErrorf(2115, "ARRAY column types are unsupported")
+			// 	}
+			// 	if _, ok := d.Type.(*parser.VectorColType); ok {
+			// 		return desc, pgerror.UnimplementedWithIssueErrorf(2115, "VECTOR column types are unsupported")
+			// 	}
+			// }
 
 			col, idx, err := sqlbase.MakeColumnDefDescs(d, searchPath, evalCtx)
 			if err != nil {

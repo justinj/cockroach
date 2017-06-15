@@ -53,6 +53,7 @@ message ColumnType {
     NULL = 13;
 
     UUID = 14;
+    ARRAY = 15;
 
     // Array and vector types.
     //
@@ -75,6 +76,8 @@ message ColumnType {
   repeated int32 array_dimensions = 4;
   // Collated STRING, CHAR, and VARCHAR
   optional string locale = 5;
+  // Only used if the kind is ARRAY.
+  optional SemanticType array_contents = 6;
 }
 
 enum ConstraintValidity {

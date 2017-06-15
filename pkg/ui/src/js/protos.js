@@ -19941,6 +19941,7 @@ export const cockroach = $root.cockroach = (() => {
          * @property {number} DELIMITED_DECIMAL=9 DELIMITED_DECIMAL value
          * @property {number} DURATION=6 DURATION value
          * @property {number} TUPLE=10 TUPLE value
+         * @property {number} ARRAY=11 ARRAY value
          * @property {number} TIMESERIES=100 TIMESERIES value
          */
         roachpb.ValueType = (function() {
@@ -19956,6 +19957,7 @@ export const cockroach = $root.cockroach = (() => {
             values[valuesById[9] = "DELIMITED_DECIMAL"] = 9;
             values[valuesById[6] = "DURATION"] = 6;
             values[valuesById[10] = "TUPLE"] = 10;
+            values[valuesById[11] = "ARRAY"] = 11;
             values[valuesById[100] = "TIMESERIES"] = 100;
             return values;
         })();

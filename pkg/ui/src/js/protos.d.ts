@@ -10945,6 +10945,7 @@ export namespace cockroach {
          * @property {number} DELIMITED_DECIMAL=9 DELIMITED_DECIMAL value
          * @property {number} DURATION=6 DURATION value
          * @property {number} TUPLE=10 TUPLE value
+         * @property {number} ARRAY=11 ARRAY value
          * @property {number} TIMESERIES=100 TIMESERIES value
          */
         enum ValueType {
@@ -10959,6 +10960,7 @@ export namespace cockroach {
             DELIMITED_DECIMAL = 9,
             DURATION = 6,
             TUPLE = 10,
+            ARRAY = 11,
             TIMESERIES = 100
         }
 
