@@ -110,6 +110,14 @@ func (p *planner) Insert(
 			return nil, err
 		}
 	}
+
+	// TODO(justin): this is incorrect: we should allow this, but then it should
+	// error unless we both have a VALUES clause and every value being "inserted"
+	// into a computed column is DEFAULT. See #22434.
+	if err := checkColsWritable(cols); err != nil {
+		return nil, err
+	}
+
 	// Number of columns expecting an input. This doesn't include the
 	// columns receiving a default value, or computed columns.
 	numInputColumns := len(cols)
@@ -593,9 +601,6 @@ func (p *planner) processColumns(
 
 		if _, ok := colIDSet[col.ID]; ok {
 			return nil, fmt.Errorf("multiple assignments to the same column %q", &node[i])
-		}
-		if col.ComputeExpr != nil {
-			return nil, fmt.Errorf("cannot write directly to computed column %q", &node[i])
 		}
 		colIDSet[col.ID] = struct{}{}
 		cols[i] = col
