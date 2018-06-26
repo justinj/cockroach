@@ -150,7 +150,7 @@ func (p payment) run(config *tpcc, db *gosql.DB, wID int) (interface{}, error) {
 			if d.cID == 0 {
 				// 2.5.2.2 Case 2: Pick the middle row, rounded up, from the selection by last name.
 				indexStr := "@customer_idx"
-				if config.usePostgres {
+				if config.usePostgres || config.useOptimizer {
 					indexStr = ""
 				}
 				rows, err := tx.Query(fmt.Sprintf(`

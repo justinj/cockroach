@@ -104,7 +104,7 @@ func (o orderStatus) run(config *tpcc, db *gosql.DB, wID int) (interface{}, erro
 			} else {
 				// Case 2: Pick the middle row, rounded up, from the selection by last name.
 				indexStr := "@customer_idx"
-				if config.usePostgres {
+				if config.usePostgres || config.useOptimizer {
 					indexStr = ""
 				}
 				rows, err := tx.Query(fmt.Sprintf(`

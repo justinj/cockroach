@@ -63,6 +63,7 @@ type tpcc struct {
 	zones             []string
 
 	usePostgres  bool
+	useOptimizer bool
 	serializable bool
 	txOpts       *gosql.TxOptions
 
@@ -99,6 +100,7 @@ var tpccMeta = workload.Meta{
 			`db`:                 {RuntimeOnly: true},
 			`fks`:                {RuntimeOnly: true},
 			`mix`:                {RuntimeOnly: true},
+			`optimizer`:          {RuntimeOnly: true},
 			`partitions`:         {RuntimeOnly: true},
 			`partition-affinity`: {RuntimeOnly: true},
 			`scatter`:            {RuntimeOnly: true},
@@ -126,6 +128,7 @@ var tpccMeta = workload.Meta{
 		g.flags.IntVar(&g.workers, `workers`, 0,
 			`Number of concurrent workers. Defaults to --warehouses * 10`)
 		g.flags.BoolVar(&g.fks, `fks`, true, `Add the foreign keys`)
+		g.flags.BoolVar(&g.useOptimizer, `optimizer`, false, `Use cost-based optimizer`)
 		g.flags.IntVar(&g.partitions, `partitions`, 0, `Partition tables (requires split)`)
 		g.flags.IntVar(&g.affinityPartition, `partition-affinity`, -1, `Run load generator against specific partition (requires partitions)`)
 		g.flags.BoolVar(&g.scatter, `scatter`, false, `Scatter ranges`)
@@ -355,6 +358,25 @@ func (w *tpcc) Ops(urls []string, reg *workload.HistogramRegistry) (workload.Que
 	}
 
 	w.usePostgres = parsedURL.Port() == "5432"
+
+	if err := func() error {
+		preConn, err := gosql.Open(`postgres`, urls[0])
+		defer preConn.Close()
+		if err != nil {
+			return err
+		}
+		mode := "off"
+		if w.useOptimizer {
+			mode = "on"
+		}
+		_, err = preConn.Exec(fmt.Sprintf(`SET CLUSTER SETTING sql.defaults.optimizer = '%s'`, mode))
+		if err != nil {
+			return err
+		}
+		return nil
+	}(); err != nil {
+		return workload.QueryLoad{}, err
+	}
 
 	nConns := w.warehouses / len(urls)
 	dbs := make([]*gosql.DB, len(urls))
