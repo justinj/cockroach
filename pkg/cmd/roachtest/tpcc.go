@@ -295,7 +295,7 @@ func runTPCCBench(ctx context.Context, t *test, c *cluster, b tpccBenchSpec) {
 				connStr = fmt.Sprintf("{pgurl:%d}", loadNode[0])
 			}
 			cmd := fmt.Sprintf("ulimit -n 32768; "+
-				"./workload run tpcc --warehouses=%d --ramp=30s --duration=%s%s %s",
+				"./workload run tpcc --optimizer --warehouses=%d --ramp=30s --duration=%s%s %s",
 				warehouses, loadDur, extraFlags, connStr)
 
 			out, err := c.RunWithBuffer(ctx, c.l, loadNode, cmd)
