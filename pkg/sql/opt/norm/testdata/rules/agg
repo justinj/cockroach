@@ -92,3 +92,70 @@ scalar-group-by
       └── json-agg [type=jsonb, outer=(5)]
            └── agg-distinct [type=jsonb, outer=(5)]
                 └── variable: j [type=jsonb, outer=(5)]
+
+norm
+SELECT 1 FROM a AS ref_0 INNER JOIN a AS ref_1 ON EXISTS(SELECT 1 FROM a WHERE a.s = ref_0.s)
+----
+project
+ ├── columns: "?column?":20(int!null)
+ ├── fd: ()-->(20)
+ ├── inner-join
+ │    ├── columns: a.s:4(string)
+ │    ├── semi-join
+ │    │    ├── columns: a.s:4(string)
+ │    │    ├── scan a
+ │    │    │    └── columns: a.s:4(string)
+ │    │    ├── scan a
+ │    │    │    └── columns: a.s:16(string)
+ │    │    └── filters [type=bool, outer=(4,16), constraints=(/4: (/NULL - ]; /16: (/NULL - ]), fd=(4)==(16), (16)==(4)]
+ │    │         └── a.s = a.s [type=bool, outer=(4,16), constraints=(/4: (/NULL - ]; /16: (/NULL - ])]
+ │    ├── scan a
+ │    └── true [type=bool]
+ └── projections
+      └── const: 1 [type=int]
+
+norm
+SELECT 1 FROM a AS ref_0 LEFT JOIN a AS ref_1 ON EXISTS(SELECT 1 FROM a WHERE a.s = ref_0.s)
+----
+project
+ ├── columns: "?column?":23(int!null)
+ ├── fd: ()-->(23)
+ ├── left-join-apply
+ │    ├── columns: a.s:4(string) a.k:7(int) true_agg:21(bool)
+ │    ├── scan a
+ │    │    └── columns: a.s:4(string)
+ │    ├── select
+ │    │    ├── columns: a.k:7(int!null) true_agg:21(bool!null)
+ │    │    ├── outer: (4)
+ │    │    ├── key: (7)
+ │    │    ├── fd: (7)-->(21)
+ │    │    ├── group-by
+ │    │    │    ├── columns: a.k:7(int!null) true_agg:21(bool)
+ │    │    │    ├── grouping columns: a.k:7(int!null)
+ │    │    │    ├── outer: (4)
+ │    │    │    ├── key: (7)
+ │    │    │    ├── fd: (7)-->(21)
+ │    │    │    ├── inner-join
+ │    │    │    │    ├── columns: a.k:7(int!null) a.s:16(string!null) true:20(bool!null)
+ │    │    │    │    ├── outer: (4)
+ │    │    │    │    ├── fd: ()-->(16,20)
+ │    │    │    │    ├── scan a
+ │    │    │    │    │    ├── columns: a.k:7(int!null)
+ │    │    │    │    │    └── key: (7)
+ │    │    │    │    ├── project
+ │    │    │    │    │    ├── columns: true:20(bool!null) a.s:16(string)
+ │    │    │    │    │    ├── fd: ()-->(20)
+ │    │    │    │    │    ├── scan a
+ │    │    │    │    │    │    └── columns: a.s:16(string)
+ │    │    │    │    │    └── projections [outer=(16)]
+ │    │    │    │    │         └── true [type=bool]
+ │    │    │    │    └── filters [type=bool, outer=(4,16), constraints=(/4: (/NULL - ]; /16: (/NULL - ]), fd=(4)==(16), (16)==(4)]
+ │    │    │    │         └── a.s = a.s [type=bool, outer=(4,16), constraints=(/4: (/NULL - ]; /16: (/NULL - ])]
+ │    │    │    └── aggregations [outer=(20)]
+ │    │    │         └── const-not-null-agg [type=bool, outer=(20)]
+ │    │    │              └── variable: true [type=bool, outer=(20)]
+ │    │    └── filters [type=bool, outer=(21), constraints=(/21: (/NULL - ]; tight)]
+ │    │         └── true_agg IS NOT NULL [type=bool, outer=(21), constraints=(/21: (/NULL - ]; tight)]
+ │    └── true [type=bool]
+ └── projections
+      └── const: 1 [type=int]
