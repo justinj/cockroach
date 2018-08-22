@@ -1,0 +1,102 @@
+exec-ddl
+CREATE TABLE a (x INT PRIMARY KEY)
+----
+TABLE a
+ ├── x int not null
+ └── INDEX primary
+      └── x int not null
+
+exec-ddl
+ALTER TABLE a INJECT STATISTICS '[
+  {
+    "columns": ["x"],
+    "created_at": "2018-01-01 1:00:00.00000+00:00",
+    "row_count": 10000000000000000000,
+    "distinct_count": 5000
+  }
+]'
+----
+
+norm
+SELECT 1 FROM a
+  CROSS JOIN a AS a2
+  CROSS JOIN a AS a3
+  CROSS JOIN a AS a4
+  CROSS JOIN a AS a5
+  CROSS JOIN a AS a6
+  CROSS JOIN a AS a7
+  CROSS JOIN a AS a8
+  CROSS JOIN a AS a9
+  CROSS JOIN a AS a10
+  CROSS JOIN a AS a11
+  CROSS JOIN a AS a12
+  CROSS JOIN a AS a13
+  CROSS JOIN a AS a14
+  CROSS JOIN a AS a15
+  CROSS JOIN a AS a16
+  CROSS JOIN a AS a17
+----
+project
+ ├── columns: "?column?":11(int!null)
+ ├── stats: [rows=1e+190]
+ ├── fd: ()-->(11)
+ ├── inner-join
+ │    ├── stats: [rows=1e+190]
+ │    ├── inner-join
+ │    │    ├── stats: [rows=1e+171]
+ │    │    ├── inner-join
+ │    │    │    ├── stats: [rows=1e+152]
+ │    │    │    ├── inner-join
+ │    │    │    │    ├── stats: [rows=1e+133]
+ │    │    │    │    ├── inner-join
+ │    │    │    │    │    ├── stats: [rows=1e+114]
+ │    │    │    │    │    ├── inner-join
+ │    │    │    │    │    │    ├── stats: [rows=1e+95]
+ │    │    │    │    │    │    ├── inner-join
+ │    │    │    │    │    │    │    ├── stats: [rows=1e+76]
+ │    │    │    │    │    │    │    ├── inner-join
+ │    │    │    │    │    │    │    │    ├── stats: [rows=1e+57]
+ │    │    │    │    │    │    │    │    ├── inner-join
+ │    │    │    │    │    │    │    │    │    ├── stats: [rows=1e+38]
+ │    │    │    │    │    │    │    │    │    ├── scan a
+ │    │    │    │    │    │    │    │    │    │    └── stats: [rows=1e+19]
+ │    │    │    │    │    │    │    │    │    ├── scan a
+ │    │    │    │    │    │    │    │    │    │    └── stats: [rows=1e+19]
+ │    │    │    │    │    │    │    │    │    └── true [type=bool]
+ │    │    │    │    │    │    │    │    ├── scan a
+ │    │    │    │    │    │    │    │    │    └── stats: [rows=1e+19]
+ │    │    │    │    │    │    │    │    └── true [type=bool]
+ │    │    │    │    │    │    │    ├── scan a
+ │    │    │    │    │    │    │    │    └── stats: [rows=1e+19]
+ │    │    │    │    │    │    │    └── true [type=bool]
+ │    │    │    │    │    │    ├── scan a
+ │    │    │    │    │    │    │    └── stats: [rows=1e+19]
+ │    │    │    │    │    │    └── true [type=bool]
+ │    │    │    │    │    ├── scan a
+ │    │    │    │    │    │    └── stats: [rows=1e+19]
+ │    │    │    │    │    └── true [type=bool]
+ │    │    │    │    ├── scan a
+ │    │    │    │    │    └── stats: [rows=1e+19]
+ │    │    │    │    └── true [type=bool]
+ │    │    │    ├── scan a
+ │    │    │    │    └── stats: [rows=1e+19]
+ │    │    │    └── true [type=bool]
+ │    │    ├── scan a
+ │    │    │    └── stats: [rows=1e+19]
+ │    │    └── true [type=bool]
+ │    ├── scan a
+ │    │    └── stats: [rows=1e+19]
+ │    └── true [type=bool]
+ └── projections
+      └── const: 1 [type=int]
+
+exec-ddl
+ALTER TABLE a INJECT STATISTICS '[
+  {
+    "columns": ["x"],
+    "created_at": "2018-01-01 1:00:00.00000+00:00",
+    "row_count": "bad type!",
+    "distinct_count": 5000
+  }
+]'
+----
