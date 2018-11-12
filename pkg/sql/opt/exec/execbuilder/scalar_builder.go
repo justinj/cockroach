@@ -57,6 +57,7 @@ func init() {
 		opt.AnyScalarOp:       (*Builder).buildAnyScalar,
 		opt.IndirectionOp:     (*Builder).buildIndirection,
 		opt.CollateOp:         (*Builder).buildCollate,
+		opt.ArrayFlattenOp:    (*Builder).buildArrayFlatten,
 		opt.UnsupportedExprOp: (*Builder).buildUnsupportedExpr,
 
 		// Item operators.
@@ -410,6 +411,39 @@ func (b *Builder) buildCollate(ctx *buildScalarCtx, scalar opt.ScalarExpr) (tree
 	}
 
 	return tree.NewTypedCollateExpr(expr, scalar.(*memo.CollateExpr).Locale), nil
+}
+
+func (b *Builder) buildArrayFlatten(
+	ctx *buildScalarCtx, scalar opt.ScalarExpr,
+) (tree.TypedExpr, error) {
+	af := scalar.(*memo.ArrayFlattenExpr)
+
+	// The subquery here should always be uncorrelated: if it were not, we would
+	// have converted it to an aggregation.
+	if !af.Input.Relational().OuterCols.Empty() {
+		panic("input to ArrayFlatten should be uncorrelated")
+	}
+
+	root, err := b.buildRelational(af.Input)
+	if err != nil {
+		return nil, err
+	}
+
+	root, err = b.ensureColumns(root, opt.ColList{af.MainCol}, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+	//if af.Input.Relational().OutputCols.Len() != 1 {
+	//	root, err = b.applySimpleProject(root, util.MakeFastIntSet(int(af.MainCol)), opt.Ordering{})
+	//	if err != nil {
+	//		return nil, err
+	//	}
+	//}
+
+	typ := b.mem.Metadata().ColumnType(opt.ColumnID(af.MainCol))
+	e := b.addSubquery(exec.SubqueryAllRows, typ, root.root, af.OriginalExpr)
+
+	return tree.NewTypedArrayFlattenExpr(e), nil
 }
 
 func (b *Builder) buildUnsupportedExpr(
