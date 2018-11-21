@@ -1032,13 +1032,13 @@ func (s *scope) replaceSubquery(
 		}
 	}
 
-	if len(outScope.extraCols) > 0 {
-		// We need to add a projection to remove the extra columns.
-		projScope := outScope.push()
-		projScope.appendColumnsFromScope(outScope)
-		projScope.expr = s.builder.constructProject(outScope.expr.(memo.RelExpr), projScope.cols)
-		outScope = projScope
-	}
+	//if len(outScope.extraCols) > 0 {
+	//	// We need to add a projection to remove the extra columns.
+	//	projScope := outScope.push()
+	//	projScope.appendColumnsFromScope(outScope)
+	//	projScope.expr = s.builder.constructProject(outScope.expr.(memo.RelExpr), projScope.cols)
+	//	outScope = projScope
+	//}
 
 	subq.cols = outScope.cols
 	subq.node = outScope.expr.(memo.RelExpr)

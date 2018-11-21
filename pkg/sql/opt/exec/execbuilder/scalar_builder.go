@@ -22,6 +22,7 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/memo"
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/tree"
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/types"
+	"github.com/cockroachdb/cockroach/pkg/util"
 	"github.com/pkg/errors"
 )
 
@@ -414,14 +415,20 @@ func (b *Builder) buildArrayFlatten(
 		panic("input to ArrayFlatten should be uncorrelated")
 	}
 
-	root, err := b.build(af.Input)
+	root, err := b.buildRelational(af.Input)
 	if err != nil {
 		return nil, err
 	}
 
-	col, _ := af.Input.(memo.RelExpr).Relational().OutputCols.Next(0)
-	typ := b.mem.Metadata().ColumnType(opt.ColumnID(col))
-	e := b.addSubquery(exec.SubqueryAllRows, typ, root, af.OriginalExpr)
+	if af.Input.Relational().OutputCols.Len() != 1 {
+		root, err = b.applySimpleProject(root, util.MakeFastIntSet(int(af.MainCol)), opt.Ordering{})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	typ := b.mem.Metadata().ColumnType(opt.ColumnID(af.MainCol))
+	e := b.addSubquery(exec.SubqueryAllRows, typ, root.root, af.OriginalExpr)
 
 	return tree.NewTypedArrayFlattenExpr(e), nil
 }

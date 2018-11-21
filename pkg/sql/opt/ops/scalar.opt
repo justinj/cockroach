@@ -39,6 +39,7 @@ define Subquery {
 define SubqueryPrivate {
 	OriginalExpr Subquery
 	Ordering Ordering
+	MainCol ColumnID
 
 	# Cmp is only used for AnyOp.
 	Cmp Operator

@@ -18,6 +18,15 @@ CREATE TABLE k (
 statement ok
 INSERT INTO k VALUES (1), (2), (3), (4), (5)
 
+statement ok
+CREATE TABLE u (
+  x INT PRIMARY KEY,
+  y INT
+)
+
+statement ok
+INSERT INTO u VALUES (1, 5), (2, 4), (3, 3), (4, 2), (5, 1)
+
 query T rowsort
 SELECT ARRAY[k] FROM k
 ----
@@ -327,7 +336,12 @@ SELECT (SELECT ARRAY['a', 'b', 'c'])[3]
 c
 
 query T
-SELECT ARRAY(SELECT generate_series(1,10) ORDER BY 1 DESC);
+SELECT ARRAY(SELECT generate_series(1,10) ORDER BY 1 DESC)
+----
+{10,9,8,7,6,5,4,3,2,1}
+
+query T
+SELECT ARRAY(SELECT x FROM u ORDER BY y)
 ----
 {10,9,8,7,6,5,4,3,2,1}
 
