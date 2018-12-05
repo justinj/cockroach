@@ -32,6 +32,10 @@ type subquery struct {
 	// cols contains the output columns of the subquery.
 	cols []scopeColumn
 
+	// extraCols contains any additional columns returned by the subquery
+	// (possibly for ordering).
+	extraCols []scopeColumn
+
 	// node is the top level memo node of the subquery.
 	node memo.RelExpr
 

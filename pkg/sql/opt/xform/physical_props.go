@@ -75,12 +75,6 @@ func (o *Optimizer) buildChildPhysicalPropsScalar(parent opt.Expr, nth int) *phy
 		if nth == 0 {
 			af := parent.(*memo.ArrayFlattenExpr)
 			childProps.Ordering.FromOrdering(af.Ordering)
-			childProps.Presentation = physical.Presentation{
-				opt.LabeledColumn{
-					Label: "input",
-					ID:    af.MainCol,
-				},
-			}
 		}
 	default:
 		return physical.MinRequired

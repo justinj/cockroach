@@ -429,18 +429,14 @@ func (b *Builder) buildArrayFlatten(
 		return nil, err
 	}
 
-	root, err = b.ensureColumns(root, opt.ColList{af.MainCol}, nil, nil)
+	// We might have an extra column here that was requested for an
+	// ordering.
+	root, err = b.ensureColumns(root, opt.ColList{af.RequestedCol}, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	//if af.Input.Relational().OutputCols.Len() != 1 {
-	//	root, err = b.applySimpleProject(root, util.MakeFastIntSet(int(af.MainCol)), opt.Ordering{})
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//}
 
-	typ := b.mem.Metadata().ColumnType(opt.ColumnID(af.MainCol))
+	typ := b.mem.Metadata().ColumnType(opt.ColumnID(af.RequestedCol))
 	e := b.addSubquery(exec.SubqueryAllRows, typ, root.root, af.OriginalExpr)
 
 	return tree.NewTypedArrayFlattenExpr(e), nil
@@ -517,12 +513,6 @@ func (b *Builder) buildSubquery(
 		input = input.Child(0).(memo.RelExpr)
 	}
 
-	// TODO(radu): for now we only support the trivial projection.
-	cols := input.Relational().OutputCols
-	if cols.Len() != 1 {
-		return nil, errors.Errorf("subquery input with multiple columns")
-	}
-
 	// We cannot execute correlated subqueries.
 	if !input.Relational().OuterCols.Empty() {
 		return nil, b.decorrelationError()
@@ -530,9 +520,18 @@ func (b *Builder) buildSubquery(
 
 	// Build the execution plan for the subquery. Note that the subquery could
 	// have subqueries of its own which are added to b.subqueries.
-	root, err := b.build(input)
+	root, err := b.buildRelational(input)
 	if err != nil {
 		return nil, err
+	}
+
+	// TODO(radu): for now we only support the trivial projection.
+	cols := input.Relational().OutputCols
+	if cols.Len() != 1 {
+		root, err = b.ensureColumns(root, opt.ColList{subquery.RequestedCol}, nil, nil)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return b.addSubquery(exec.SubqueryOneRow, subquery.Typ, root, subquery.OriginalExpr), nil

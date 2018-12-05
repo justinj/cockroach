@@ -474,7 +474,9 @@ func (f *ExprFmtCtx) formatScalarPrivate(scalar opt.ScalarExpr) {
 		private = t.Cmp
 
 	case *ArrayFlattenExpr:
-		fmt.Fprintf(f.Buffer, " maincol=%v", t.MainCol)
+		if t.Input.Relational().OutputCols.Len() != 1 {
+			fmt.Fprintf(f.Buffer, " col=%v", t.RequestedCol)
+		}
 
 	case *SubqueryExpr, *ExistsExpr:
 		// We don't want to show the OriginalExpr.

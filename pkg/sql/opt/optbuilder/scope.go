@@ -1038,6 +1038,7 @@ func (s *scope) replaceSubquery(
 	//}
 
 	subq.cols = outScope.cols
+	subq.extraCols = outScope.extraCols
 	subq.node = outScope.expr.(memo.RelExpr)
 	subq.ordering = ord
 	return &subq

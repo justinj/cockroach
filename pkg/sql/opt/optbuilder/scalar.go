@@ -139,7 +139,7 @@ func (b *Builder) buildScalar(
 		subqueryPrivate := memo.SubqueryPrivate{
 			OriginalExpr: s.Subquery,
 			Ordering:     s.ordering,
-			MainCol:      inCol,
+			RequestedCol: s.cols[0].id,
 		}
 		out = b.factory.ConstructArrayFlatten(s.node, &subqueryPrivate)
 

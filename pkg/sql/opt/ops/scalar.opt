@@ -39,7 +39,11 @@ define Subquery {
 define SubqueryPrivate {
 	OriginalExpr Subquery
 	Ordering Ordering
-	MainCol ColumnID
+
+  # RequestedCol is set if there could possibly be other columns in the input
+  # (say, if there was an ordering that must be respected) than the one that will
+  # eventually be output.
+	RequestedCol ColumnID
 
 	# Cmp is only used for AnyOp.
 	Cmp Operator
