@@ -141,11 +141,20 @@ func (f *ExprFmtCtx) formatExpr(e opt.Expr, tp treeprinter.Node) {
 
 func (f *ExprFmtCtx) formatRelational(e RelExpr, tp treeprinter.Node) {
 	md := f.Memo.Metadata()
-	relational := e.Relational()
-	required := e.RequiredPhysical()
-	if required == nil {
-		// required can be nil before optimization has taken place.
-		required = physical.MinRequired
+
+	relational := &props.Relational{}
+	if e.group() != nil {
+		relational = e.Relational()
+	}
+
+	required := physical.MinRequired
+
+	if e.group() != nil {
+		required = e.RequiredPhysical()
+		if required == nil {
+			// required can be nil before optimization has taken place.
+			required = physical.MinRequired
+		}
 	}
 
 	// Special cases for merge-join and lookup-join: we want the type of the join
@@ -203,7 +212,9 @@ func (f *ExprFmtCtx) formatRelational(e RelExpr, tp treeprinter.Node) {
 
 	default:
 		// Fall back to writing output columns in column id order.
-		colList = opt.ColSetToList(e.Relational().OutputCols)
+		if e.group() != nil {
+			colList = opt.ColSetToList(e.Relational().OutputCols)
+		}
 	}
 
 	f.formatColumns(e, tp, colList, required.Presentation)
@@ -324,9 +335,11 @@ func (f *ExprFmtCtx) formatRelational(e RelExpr, tp treeprinter.Node) {
 	}
 
 	if !f.HasFlags(ExprFmtHideCost) {
-		cost := e.Cost()
-		if cost != 0 {
-			tp.Childf("cost: %.9g", cost)
+		if e.group() != nil {
+			cost := e.Cost()
+			if cost != 0 {
+				tp.Childf("cost: %.9g", cost)
+			}
 		}
 	}
 

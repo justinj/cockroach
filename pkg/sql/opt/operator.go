@@ -89,6 +89,8 @@ type Expr interface {
 type ScalarExpr interface {
 	Expr
 
+	ID() int
+
 	// DataType is the SQL type of the expression.
 	DataType() types.T
 }

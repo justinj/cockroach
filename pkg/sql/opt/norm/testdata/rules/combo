@@ -157,19 +157,108 @@ PushFilterIntoJoinLeft
   -           └── i = 9 [type=bool, outer=(2), constraints=(/2: [/9 - /9]; tight), fd=()-->(2)]
   +           └── k = x [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
 ================================================================================
+NormalizeJoinOrder
+  Cost: 2162.92
+================================================================================
+   project
+    ├── columns: s:4(string)
+    └── inner-join
+         ├── columns: k:1(int!null) i:2(int!null) f:3(float) s:4(string) j:5(jsonb) x:6(int!null) y:7(int)
+         ├── key: (6)
+  -      ├── fd: ()-->(2), (1)-->(3-5), (3,4)~~>(1,5), (6)-->(7), (1)==(6), (6)==(1)
+  +      ├── fd: ()-->(2), (6)-->(7), (1)-->(3-5), (3,4)~~>(1,5), (1)==(6), (6)==(1)
+  +      ├── scan xy
+  +      │    ├── columns: x:6(int!null) y:7(int)
+  +      │    ├── key: (6)
+  +      │    └── fd: (6)-->(7)
+         ├── select
+         │    ├── columns: k:1(int!null) i:2(int!null) f:3(float) s:4(string) j:5(jsonb)
+         │    ├── key: (1)
+         │    ├── fd: ()-->(2), (1)-->(3-5), (3,4)~~>(1,5)
+         │    ├── scan a
+         │    │    ├── columns: k:1(int!null) i:2(int) f:3(float) s:4(string) j:5(jsonb)
+         │    │    ├── key: (1)
+         │    │    └── fd: (1)-->(2-5), (3,4)~~>(1,2,5)
+         │    └── filters
+         │         └── i = 9 [type=bool, outer=(2), constraints=(/2: [/9 - /9]; tight), fd=()-->(2)]
+  -      ├── scan xy
+  -      │    ├── columns: x:6(int!null) y:7(int)
+  -      │    ├── key: (6)
+  -      │    └── fd: (6)-->(7)
+         └── filters
+              └── k = x [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
+================================================================================
 PruneJoinLeftCols
-  Cost: 2167.98
+  Cost: 2152.92
 ================================================================================
    project
     ├── columns: s:4(string)
     └── inner-join
   -      ├── columns: k:1(int!null) i:2(int!null) f:3(float) s:4(string) j:5(jsonb) x:6(int!null) y:7(int)
-  +      ├── columns: k:1(int!null) i:2(int!null) s:4(string) x:6(int!null) y:7(int)
+  +      ├── columns: k:1(int!null) i:2(int!null) f:3(float) s:4(string) j:5(jsonb) x:6(int!null)
          ├── key: (6)
-  -      ├── fd: ()-->(2), (1)-->(3-5), (3,4)~~>(1,5), (6)-->(7), (1)==(6), (6)==(1)
+  -      ├── fd: ()-->(2), (6)-->(7), (1)-->(3-5), (3,4)~~>(1,5), (1)==(6), (6)==(1)
+  +      ├── fd: ()-->(2), (1)-->(3-5), (3,4)~~>(1,5), (1)==(6), (6)==(1)
+         ├── scan xy
+  -      │    ├── columns: x:6(int!null) y:7(int)
+  -      │    ├── key: (6)
+  -      │    └── fd: (6)-->(7)
+  +      │    ├── columns: x:6(int!null)
+  +      │    └── key: (6)
+         ├── select
+         │    ├── columns: k:1(int!null) i:2(int!null) f:3(float) s:4(string) j:5(jsonb)
+         │    ├── key: (1)
+         │    ├── fd: ()-->(2), (1)-->(3-5), (3,4)~~>(1,5)
+         │    ├── scan a
+         │    │    ├── columns: k:1(int!null) i:2(int) f:3(float) s:4(string) j:5(jsonb)
+         │    │    ├── key: (1)
+         │    │    └── fd: (1)-->(2-5), (3,4)~~>(1,2,5)
+         │    └── filters
+         │         └── i = 9 [type=bool, outer=(2), constraints=(/2: [/9 - /9]; tight), fd=()-->(2)]
+         └── filters
+              └── k = x [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
+================================================================================
+NormalizeJoinOrder
+  Cost: 2157.87
+================================================================================
+   project
+    ├── columns: s:4(string)
+    └── inner-join
+         ├── columns: k:1(int!null) i:2(int!null) f:3(float) s:4(string) j:5(jsonb) x:6(int!null)
+         ├── key: (6)
+         ├── fd: ()-->(2), (1)-->(3-5), (3,4)~~>(1,5), (1)==(6), (6)==(1)
+  -      ├── scan xy
+  -      │    ├── columns: x:6(int!null)
+  -      │    └── key: (6)
+         ├── select
+         │    ├── columns: k:1(int!null) i:2(int!null) f:3(float) s:4(string) j:5(jsonb)
+         │    ├── key: (1)
+         │    ├── fd: ()-->(2), (1)-->(3-5), (3,4)~~>(1,5)
+         │    ├── scan a
+         │    │    ├── columns: k:1(int!null) i:2(int) f:3(float) s:4(string) j:5(jsonb)
+         │    │    ├── key: (1)
+         │    │    └── fd: (1)-->(2-5), (3,4)~~>(1,2,5)
+         │    └── filters
+         │         └── i = 9 [type=bool, outer=(2), constraints=(/2: [/9 - /9]; tight), fd=()-->(2)]
+  +      ├── scan xy
+  +      │    ├── columns: x:6(int!null)
+  +      │    └── key: (6)
+         └── filters
+              └── k = x [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
+================================================================================
+PruneJoinLeftCols
+  Cost: 2157.98
+================================================================================
+   project
+    ├── columns: s:4(string)
+    └── inner-join
+  -      ├── columns: k:1(int!null) i:2(int!null) f:3(float) s:4(string) j:5(jsonb) x:6(int!null)
+  +      ├── columns: k:1(int!null) i:2(int!null) s:4(string) x:6(int!null)
+         ├── key: (6)
+  -      ├── fd: ()-->(2), (1)-->(3-5), (3,4)~~>(1,5), (1)==(6), (6)==(1)
   -      ├── select
   -      │    ├── columns: k:1(int!null) i:2(int!null) f:3(float) s:4(string) j:5(jsonb)
-  +      ├── fd: ()-->(2), (1)-->(4), (6)-->(7), (1)==(6), (6)==(1)
+  +      ├── fd: ()-->(2), (1)-->(4), (1)==(6), (6)==(1)
   +      ├── project
   +      │    ├── columns: k:1(int!null) i:2(int!null) s:4(string)
          │    ├── key: (1)
@@ -192,21 +281,20 @@ PruneJoinLeftCols
   +      │         └── filters
   +      │              └── i = 9 [type=bool, outer=(2), constraints=(/2: [/9 - /9]; tight), fd=()-->(2)]
          ├── scan xy
-         │    ├── columns: x:6(int!null) y:7(int)
-         │    ├── key: (6)
-         │    └── fd: (6)-->(7)
+         │    ├── columns: x:6(int!null)
+         │    └── key: (6)
          └── filters
               └── k = x [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
 ================================================================================
 PruneSelectCols
-  Cost: 2147.98
+  Cost: 2137.98
 ================================================================================
    project
     ├── columns: s:4(string)
     └── inner-join
-         ├── columns: k:1(int!null) i:2(int!null) s:4(string) x:6(int!null) y:7(int)
+         ├── columns: k:1(int!null) i:2(int!null) s:4(string) x:6(int!null)
          ├── key: (6)
-         ├── fd: ()-->(2), (1)-->(4), (6)-->(7), (1)==(6), (6)==(1)
+         ├── fd: ()-->(2), (1)-->(4), (1)==(6), (6)==(1)
          ├── project
          │    ├── columns: k:1(int!null) i:2(int!null) s:4(string)
          │    ├── key: (1)
@@ -226,21 +314,20 @@ PruneSelectCols
          │         └── filters
          │              └── i = 9 [type=bool, outer=(2), constraints=(/2: [/9 - /9]; tight), fd=()-->(2)]
          ├── scan xy
-         │    ├── columns: x:6(int!null) y:7(int)
-         │    ├── key: (6)
-         │    └── fd: (6)-->(7)
+         │    ├── columns: x:6(int!null)
+         │    └── key: (6)
          └── filters
               └── k = x [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
 ================================================================================
 EliminateProject
-  Cost: 2147.87
+  Cost: 2137.87
 ================================================================================
    project
     ├── columns: s:4(string)
     └── inner-join
-         ├── columns: k:1(int!null) i:2(int!null) s:4(string) x:6(int!null) y:7(int)
+         ├── columns: k:1(int!null) i:2(int!null) s:4(string) x:6(int!null)
          ├── key: (6)
-         ├── fd: ()-->(2), (1)-->(4), (6)-->(7), (1)==(6), (6)==(1)
+         ├── fd: ()-->(2), (1)-->(4), (1)==(6), (6)==(1)
   -      ├── project
   +      ├── select
          │    ├── columns: k:1(int!null) i:2(int!null) s:4(string)
@@ -263,55 +350,12 @@ EliminateProject
   +      │    └── filters
   +      │         └── i = 9 [type=bool, outer=(2), constraints=(/2: [/9 - /9]; tight), fd=()-->(2)]
          ├── scan xy
-         │    ├── columns: x:6(int!null) y:7(int)
-         │    ├── key: (6)
-         │    └── fd: (6)-->(7)
+         │    ├── columns: x:6(int!null)
+         │    └── key: (6)
          └── filters
               └── k = x [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
 ================================================================================
-PruneJoinRightCols
-  Cost: 2137.87
-================================================================================
-   project
-    ├── columns: s:4(string)
-    └── inner-join
-  -      ├── columns: k:1(int!null) i:2(int!null) s:4(string) x:6(int!null) y:7(int)
-  +      ├── columns: k:1(int!null) i:2(int!null) s:4(string) x:6(int!null)
-         ├── key: (6)
-  -      ├── fd: ()-->(2), (1)-->(4), (6)-->(7), (1)==(6), (6)==(1)
-  +      ├── fd: ()-->(2), (1)-->(4), (1)==(6), (6)==(1)
-         ├── select
-         │    ├── columns: k:1(int!null) i:2(int!null) s:4(string)
-         │    ├── key: (1)
-         │    ├── fd: ()-->(2), (1)-->(4)
-         │    ├── scan a
-         │    │    ├── columns: k:1(int!null) i:2(int) s:4(string)
-         │    │    ├── key: (1)
-         │    │    └── fd: (1)-->(2,4)
-         │    └── filters
-         │         └── i = 9 [type=bool, outer=(2), constraints=(/2: [/9 - /9]; tight), fd=()-->(2)]
-         ├── scan xy
-  -      │    ├── columns: x:6(int!null) y:7(int)
-  -      │    ├── key: (6)
-  -      │    └── fd: (6)-->(7)
-  +      │    ├── columns: x:6(int!null)
-  +      │    └── key: (6)
-         └── filters
-              └── k = x [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
---------------------------------------------------------------------------------
-GenerateIndexScans (no changes)
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-GenerateZigzagJoins (no changes)
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-GenerateConstrainedScans (no changes)
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-GenerateIndexScans (no changes)
---------------------------------------------------------------------------------
-================================================================================
-CommuteJoin
+NormalizeJoinOrder
   Cost: 2132.92
 ================================================================================
    project
@@ -338,6 +382,21 @@ CommuteJoin
   -      │    └── key: (6)
          └── filters
               └── k = x [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
+--------------------------------------------------------------------------------
+GenerateIndexScans (no changes)
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+GenerateIndexScans (no changes)
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+GenerateZigzagJoins (no changes)
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+GenerateConstrainedScans (no changes)
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+CommuteJoin (no changes)
+--------------------------------------------------------------------------------
 ================================================================================
 GenerateMergeJoins
   Cost: 2130.35
@@ -347,13 +406,15 @@ GenerateMergeJoins
   - └── inner-join
   + └── inner-join (merge)
          ├── columns: k:1(int!null) i:2(int!null) s:4(string) x:6(int!null)
-  +      ├── left ordering: +1
-  +      ├── right ordering: +6
+  +      ├── left ordering: +6
+  +      ├── right ordering: +1
          ├── key: (6)
          ├── fd: ()-->(2), (1)-->(4), (1)==(6), (6)==(1)
-  -      ├── scan xy
-  -      │    ├── columns: x:6(int!null)
+         ├── scan xy
+         │    ├── columns: x:6(int!null)
   -      │    └── key: (6)
+  +      │    ├── key: (6)
+  +      │    └── ordering: +6
          ├── select
          │    ├── columns: k:1(int!null) i:2(int!null) s:4(string)
          │    ├── key: (1)
@@ -369,11 +430,16 @@ GenerateMergeJoins
          │         └── i = 9 [type=bool, outer=(2), constraints=(/2: [/9 - /9]; tight), fd=()-->(2)]
   -      └── filters
   -           └── k = x [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
-  +      ├── scan xy
-  +      │    ├── columns: x:6(int!null)
-  +      │    ├── key: (6)
-  +      │    └── ordering: +6
   +      └── filters (true)
+--------------------------------------------------------------------------------
+GenerateLookupJoinsWithFilter (no changes)
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+CommuteJoin (no changes)
+--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
+GenerateMergeJoins (no changes)
+--------------------------------------------------------------------------------
 ================================================================================
 GenerateLookupJoins
   Cost: 1139.94
@@ -383,11 +449,15 @@ GenerateLookupJoins
   - └── inner-join (merge)
   + └── inner-join (lookup xy)
          ├── columns: k:1(int!null) i:2(int!null) s:4(string) x:6(int!null)
-  -      ├── left ordering: +1
-  -      ├── right ordering: +6
+  -      ├── left ordering: +6
+  -      ├── right ordering: +1
   +      ├── key columns: [1] = [6]
          ├── key: (6)
          ├── fd: ()-->(2), (1)-->(4), (1)==(6), (6)==(1)
+  -      ├── scan xy
+  -      │    ├── columns: x:6(int!null)
+  -      │    ├── key: (6)
+  -      │    └── ordering: +6
          ├── select
          │    ├── columns: k:1(int!null) i:2(int!null) s:4(string)
          │    ├── key: (1)
@@ -401,20 +471,7 @@ GenerateLookupJoins
   +      │    │    └── fd: (1)-->(2,4)
          │    └── filters
          │         └── i = 9 [type=bool, outer=(2), constraints=(/2: [/9 - /9]; tight), fd=()-->(2)]
-  -      ├── scan xy
-  -      │    ├── columns: x:6(int!null)
-  -      │    ├── key: (6)
-  -      │    └── ordering: +6
          └── filters (true)
---------------------------------------------------------------------------------
-CommuteJoin (no changes)
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-GenerateMergeJoins (no changes)
---------------------------------------------------------------------------------
---------------------------------------------------------------------------------
-GenerateLookupJoinsWithFilter (no changes)
---------------------------------------------------------------------------------
 ================================================================================
 Final best expression
   Cost: 1139.94

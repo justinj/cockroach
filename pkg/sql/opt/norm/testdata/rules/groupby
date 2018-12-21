@@ -388,19 +388,19 @@ distinct-on
  ├── columns: i:2(int) f:3(float) x:6(int)  [hidden: k:1(int!null)]
  ├── grouping columns: k:1(int!null)
  ├── key: (1)
- ├── fd: (1)-->(2,3,6), (2,3)~~>(1), (6)-->(2)
+ ├── fd: (6)-->(2), (1)-->(2,3,6), (2,3)~~>(1)
  ├── inner-join
  │    ├── columns: k:1(int!null) i:2(int!null) f:3(float) x:6(int!null) y:7(int!null)
  │    ├── key: (1,6)
- │    ├── fd: (1)-->(2,3), (2,3)~~>(1), (6)-->(7), (2)==(7), (7)==(2)
- │    ├── scan a@fi_idx
- │    │    ├── columns: k:1(int!null) i:2(int!null) f:3(float)
- │    │    ├── key: (1)
- │    │    └── fd: (1)-->(2,3), (2,3)~~>(1)
+ │    ├── fd: (6)-->(7), (1)-->(2,3), (2,3)~~>(1), (2)==(7), (7)==(2)
  │    ├── scan xy
  │    │    ├── columns: x:6(int!null) y:7(int)
  │    │    ├── key: (6)
  │    │    └── fd: (6)-->(7)
+ │    ├── scan a@fi_idx
+ │    │    ├── columns: k:1(int!null) i:2(int!null) f:3(float)
+ │    │    ├── key: (1)
+ │    │    └── fd: (1)-->(2,3), (2,3)~~>(1)
  │    └── filters
  │         └── i = y [type=bool, outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(7), (7)==(2)]
  └── aggregations

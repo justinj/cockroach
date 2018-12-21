@@ -2,6 +2,18 @@
 # join.opt contains normalization rules for Join operators.
 # =============================================================================
 
+[NormalizeJoinOrder, Normalize, HighPriority]
+(InnerJoin
+    $left:*
+    $right:* & (IsGroupLT $right $left)
+    $on:*
+)
+=>
+(InnerJoin
+    $right
+    $left
+    $on
+)
 
 # SimplifyJoinFilters works like SimplifySelectFilters, except that it operates
 # on Join filters rather than Select filters.
@@ -447,3 +459,16 @@ $left
 )
 =>
 (ExtractJoinEquality (OpName) $left $right $on $item)
+
+[SortFiltersInJoin, Normalize]
+(Join
+    $left:*
+    $right:*
+    $on:* & ^(IsFiltersSorted $on)
+)
+=>
+((OpName)
+  $left
+  $right
+  (SortFilters $on)
+)

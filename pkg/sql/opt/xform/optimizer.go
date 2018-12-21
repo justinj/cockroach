@@ -415,6 +415,7 @@ func (o *Optimizer) optimizeGroup(grp memo.RelExpr, required *physical.Required)
 				continue
 			}
 
+			fmt.Println("optimizing", o.mem.Succinct(member))
 			// Optimize the group member with respect to the required properties.
 			memberOptimized := o.optimizeGroupMember(state, member, required)
 

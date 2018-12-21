@@ -107,6 +107,7 @@ func (g *exprsGen) genExprGroupDef(define *lang.DefineExpr) {
 	// Generate the type definition.
 	fmt.Fprintf(g.w, "type %s struct {\n", groupStructType)
 	fmt.Fprintf(g.w, "  mem *Memo\n")
+	fmt.Fprintf(g.w, "  id int\n")
 	fmt.Fprintf(g.w, "  rel props.Relational\n")
 	fmt.Fprintf(g.w, "  first %s\n", structType)
 	fmt.Fprintf(g.w, "  best bestProps\n")
@@ -131,6 +132,11 @@ func (g *exprsGen) genExprGroupDef(define *lang.DefineExpr) {
 	// Generate the bestProps method.
 	fmt.Fprintf(g.w, "func (g *%s) bestProps() *bestProps {\n", groupStructType)
 	fmt.Fprintf(g.w, "  return &g.best\n")
+	fmt.Fprintf(g.w, "}\n\n")
+
+	// Generate the id method.
+	fmt.Fprintf(g.w, "func (g *%s) grpID() int {\n", groupStructType)
+	fmt.Fprintf(g.w, "  return g.id\n")
 	fmt.Fprintf(g.w, "}\n\n")
 }
 
@@ -200,6 +206,7 @@ func (g *exprsGen) genExprStruct(define *lang.DefineExpr) {
 		if g.needsDataTypeField(define) {
 			fmt.Fprintf(g.w, "  Typ types.T\n")
 		}
+		fmt.Fprintf(g.w, "  id  int\n")
 	} else if define.Tags.Contains("Enforcer") {
 		fmt.Fprintf(g.w, "  Input RelExpr\n")
 		fmt.Fprintf(g.w, "  best  bestProps\n")
@@ -220,6 +227,11 @@ func (g *exprsGen) genExprFuncs(define *lang.DefineExpr) {
 
 	if define.Tags.Contains("Scalar") {
 		fmt.Fprintf(g.w, "var _ opt.ScalarExpr = &%s{}\n\n", opTyp.name)
+
+		// Generate the Id method.
+		fmt.Fprintf(g.w, "func (e *%s) ID() int {\n", opTyp.name)
+		fmt.Fprintf(g.w, "  return e.id\n")
+		fmt.Fprintf(g.w, "}\n\n")
 	} else {
 		fmt.Fprintf(g.w, "var _ RelExpr = &%s{}\n\n", opTyp.name)
 	}
@@ -499,6 +511,11 @@ func (g *exprsGen) genListExprFuncs(define *lang.DefineExpr) {
 	opTyp := g.md.typeOf(define)
 	fmt.Fprintf(g.w, "var _ opt.ScalarExpr = &%s{}\n\n", opTyp.name)
 
+	// Generate the ID method.
+	fmt.Fprintf(g.w, "func (e *%s) ID() int {\n", opTyp.name)
+	fmt.Fprintf(g.w, "  panic(\"lists have no id\")")
+	fmt.Fprintf(g.w, "}\n\n")
+
 	// Generate the Op method.
 	fmt.Fprintf(g.w, "func (e *%s) Op() opt.Operator {\n", opTyp.name)
 	fmt.Fprintf(g.w, "  return opt.%sOp\n", define.Name)
@@ -583,7 +600,7 @@ func (g *exprsGen) genMemoizeFuncs() {
 		} else {
 			groupName := fmt.Sprintf("%sGroup", unTitle(string(define.Name)))
 			fmt.Fprintf(g.w, "  const size = int64(unsafe.Sizeof(%s{}))\n", groupName)
-			fmt.Fprintf(g.w, "  grp := &%s{mem: m, first: %s{\n", groupName, opTyp.name)
+			fmt.Fprintf(g.w, "  grp := &%s{mem: m, id: m.NextID(), first: %s{\n", groupName, opTyp.name)
 		}
 
 		for _, field := range define.Fields {

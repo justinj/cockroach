@@ -15,6 +15,7 @@
 package memo
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
@@ -144,6 +145,9 @@ type Memo struct {
 	// searchPath is the current search path at the time the memo was compiled.
 	// If this changes, then the memo is invalidated.
 	searchPath sessiondata.SearchPath
+
+	// ...
+	curID int
 }
 
 // Init initializes a new empty memo instance, or resets existing state so it
@@ -325,4 +329,37 @@ func (m *Memo) IsOptimized() bool {
 	// assigned.
 	rel, ok := m.rootExpr.(RelExpr)
 	return ok && rel.RequiredPhysical() != nil
+}
+
+// IsOptimized returns true if the memo has been fully optimized.
+func (m *Memo) NextID() int {
+	m.curID++
+	return m.curID
+}
+
+// IsOptimized returns true if the memo has been fully optimized.
+func (m *Memo) IsGroupLT(left, right RelExpr) bool {
+	return left.group().grpID() < right.group().grpID()
+}
+
+// GroupNum
+func (m *Memo) GroupNum(e RelExpr) int {
+	if e.group() == nil {
+		return -1
+	}
+	return e.group().grpID()
+}
+
+func (m *Memo) Succinct(e RelExpr) string {
+	var buf bytes.Buffer
+	buf.WriteByte('(')
+	fmt.Fprintf(&buf, "%d=", m.GroupNum(e))
+	buf.WriteString(e.Op().String())
+	for i, n := 0, e.ChildCount(); i < n; i++ {
+		if r, ok := e.Child(i).(RelExpr); ok {
+			fmt.Fprintf(&buf, " %d", m.GroupNum(r))
+		}
+	}
+	buf.WriteByte(')')
+	return buf.String()
 }

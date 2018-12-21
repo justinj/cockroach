@@ -715,9 +715,9 @@ EXECGEN_TARGETS = \
 OPTGEN_TARGETS = \
 	pkg/sql/opt/memo/expr.og.go \
 	pkg/sql/opt/operator.og.go \
-	pkg/sql/opt/xform/explorer.og.go \
 	pkg/sql/opt/norm/factory.og.go \
 	pkg/sql/opt/rule_name.og.go \
+	pkg/sql/opt/xform/explorer.og.go \
 	pkg/sql/opt/rule_name_string.go
 
 go-targets-ccl := \

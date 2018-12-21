@@ -457,6 +457,12 @@ func (c *CustomFuncs) ReplaceFiltersItem(
 	panic(fmt.Sprintf("item to replace is not in the list: %v", search))
 }
 
+func p(e opt.Expr, m *memo.Memo) string {
+	f := memo.MakeExprFmtCtx(memo.ExprFmtHideQualifications, m)
+	f.FormatExpr(e)
+	return f.Buffer.String()
+}
+
 // FiltersBoundBy returns true if all outer references in any of the filter
 // conditions are bound by the given columns. For example:
 //
@@ -1434,4 +1440,30 @@ func (c *CustomFuncs) FoldComparison(op opt.Operator, left, right opt.ScalarExpr
 		return nil
 	}
 	return c.f.ConstructConstVal(result)
+}
+
+// todo: put this in a group
+func (c *CustomFuncs) IsGroupLT(left, right opt.Expr) bool {
+	return c.f.mem.IsGroupLT(left.(memo.RelExpr), right.(memo.RelExpr))
+}
+
+func (c *CustomFuncs) IsFiltersSorted(f memo.FiltersExpr) bool {
+	for i, n := 0, f.ChildCount(); i < n-1; i++ {
+		if f.Child(i).Child(0).(opt.ScalarExpr).ID() > f.Child(i+1).Child(0).(opt.ScalarExpr).ID() {
+			return false
+		}
+	}
+	return true
+}
+
+func (c *CustomFuncs) SortFilters(f memo.FiltersExpr) memo.FiltersExpr {
+	result := make(memo.FiltersExpr, len(f))
+	for i, n := 0, f.ChildCount(); i < n; i++ {
+		fi := f.Child(i).(*memo.FiltersItem)
+		result[i] = *fi
+	}
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Child(0).(opt.ScalarExpr).ID() < result[j].Child(0).(opt.ScalarExpr).ID()
+	})
+	return result
 }

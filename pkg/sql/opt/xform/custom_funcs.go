@@ -1165,6 +1165,22 @@ func (c *CustomFuncs) MakeOrderingChoiceFromColumn(
 	return oc
 }
 
+func (c *CustomFuncs) SwapJoinsIfNeeded(
+	j *memo.InnerJoinExpr,
+	grp memo.RelExpr,
+) {
+	left := j.Left
+	right := j.Right
+	if c.e.mem.IsGroupLT(right, left) {
+		left, right = right, left
+	}
+	c.e.mem.AddInnerJoinToGroup(&memo.InnerJoinExpr{
+		Left:  left,
+		Right: right,
+		On:    j.On,
+	}, grp)
+}
+
 // scanIndexIter is a helper struct that supports iteration over the indexes
 // of a Scan operator table. For example:
 //

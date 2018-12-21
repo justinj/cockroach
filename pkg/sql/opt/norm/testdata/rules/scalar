@@ -1128,12 +1128,12 @@ project
  │    │    ├── columns: b.k:1(int!null) a.k:7(int!null)
  │    │    ├── key: (7)
  │    │    ├── fd: (1)==(7), (7)==(1)
- │    │    ├── scan b
- │    │    │    ├── columns: b.k:1(int!null)
- │    │    │    └── key: (1)
  │    │    ├── scan a
  │    │    │    ├── columns: a.k:7(int!null)
  │    │    │    └── key: (7)
+ │    │    ├── scan b
+ │    │    │    ├── columns: b.k:1(int!null)
+ │    │    │    └── key: (1)
  │    │    └── filters
  │    │         └── a.k = b.k [type=bool, outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
  │    └── aggregations
@@ -1315,22 +1315,15 @@ project
  │    │    │    │    │    ├── cardinality: [0 - 1]
  │    │    │    │    │    ├── key: ()
  │    │    │    │    │    ├── fd: ()-->(7,13)
- │    │    │    │    │    ├── select
- │    │    │    │    │    │    ├── columns: b.k:7(int!null)
- │    │    │    │    │    │    ├── outer: (1)
- │    │    │    │    │    │    ├── cardinality: [0 - 1]
- │    │    │    │    │    │    ├── key: ()
- │    │    │    │    │    │    ├── fd: ()-->(7)
- │    │    │    │    │    │    ├── scan b
- │    │    │    │    │    │    │    ├── columns: b.k:7(int!null)
- │    │    │    │    │    │    │    └── key: (7)
- │    │    │    │    │    │    └── filters
- │    │    │    │    │    │         └── b.k = c.k [type=bool, outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
  │    │    │    │    │    ├── scan a
  │    │    │    │    │    │    ├── columns: a.k:13(int!null)
  │    │    │    │    │    │    └── key: (13)
+ │    │    │    │    │    ├── scan b
+ │    │    │    │    │    │    ├── columns: b.k:7(int!null)
+ │    │    │    │    │    │    └── key: (7)
  │    │    │    │    │    └── filters
- │    │    │    │    │         └── a.k = b.k [type=bool, outer=(7,13), constraints=(/7: (/NULL - ]; /13: (/NULL - ]), fd=(7)==(13), (13)==(7)]
+ │    │    │    │    │         ├── a.k = b.k [type=bool, outer=(7,13), constraints=(/7: (/NULL - ]; /13: (/NULL - ]), fd=(7)==(13), (13)==(7)]
+ │    │    │    │    │         └── b.k = c.k [type=bool, outer=(1,7), constraints=(/1: (/NULL - ]; /7: (/NULL - ]), fd=(1)==(7), (7)==(1)]
  │    │    │    │    └── aggregations
  │    │    │    │         ├── array-agg [type=int[], outer=(13)]
  │    │    │    │         │    └── variable: a.k [type=int]

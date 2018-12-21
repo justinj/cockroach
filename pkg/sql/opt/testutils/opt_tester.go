@@ -248,7 +248,7 @@ func (ot *OptTester) RunCommand(tb testing.TB, d *datadriven.TestData) string {
 			}
 			return fmt.Sprintf("error: %s\n", text)
 		}
-		if err := ot.postProcess(e); err != nil {
+		if err := ot.postProcess(e, d); err != nil {
 			tb.Fatal(err)
 		}
 		return memo.FormatExpr(e, ot.Flags.ExprFormat)
@@ -263,7 +263,7 @@ func (ot *OptTester) RunCommand(tb testing.TB, d *datadriven.TestData) string {
 			}
 			return fmt.Sprintf("error: %s\n", text)
 		}
-		if err := ot.postProcess(e); err != nil {
+		if err := ot.postProcess(e, d); err != nil {
 			tb.Fatal(err)
 		}
 		return memo.FormatExpr(e, ot.Flags.ExprFormat)
@@ -273,7 +273,7 @@ func (ot *OptTester) RunCommand(tb testing.TB, d *datadriven.TestData) string {
 		if err != nil {
 			d.Fatalf(tb, "%v", err)
 		}
-		if err := ot.postProcess(e); err != nil {
+		if err := ot.postProcess(e, d); err != nil {
 			tb.Fatal(err)
 		}
 		return memo.FormatExpr(e, ot.Flags.ExprFormat)
@@ -325,7 +325,7 @@ func formatRuleSet(r RuleSet) string {
 	return buf.String()
 }
 
-func (ot *OptTester) postProcess(e opt.Expr) error {
+func (ot *OptTester) postProcess(e opt.Expr, d *datadriven.TestData) error {
 	fillInLazyProps(e)
 
 	if rel, ok := e.(memo.RelExpr); ok {
@@ -336,13 +336,13 @@ func (ot *OptTester) postProcess(e opt.Expr) error {
 
 	if !ot.Flags.ExpectedRules.SubsetOf(ot.seenRules) {
 		unseen := ot.Flags.ExpectedRules.Difference(ot.seenRules)
-		return fmt.Errorf("expected to see %s, but was not triggered. Did see %s",
-			formatRuleSet(unseen), formatRuleSet(ot.seenRules))
+		return fmt.Errorf("(%s) expected to see %s, but was not triggered. Did see %s",
+			d.Pos, formatRuleSet(unseen), formatRuleSet(ot.seenRules))
 	}
 
 	if ot.Flags.UnexpectedRules.Intersects(ot.seenRules) {
 		seen := ot.Flags.UnexpectedRules.Intersection(ot.seenRules)
-		return fmt.Errorf("expected not to see %s, but it was triggered", formatRuleSet(seen))
+		return fmt.Errorf("expected not to see %s, but it was triggered (%s)", formatRuleSet(seen), ot.sql)
 	}
 
 	return nil

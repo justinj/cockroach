@@ -325,10 +325,10 @@ select
  │    ├── fd: ()-->(7)
  │    ├── inner-join
  │    │    ├── columns: x:5(int!null)
- │    │    ├── scan a
  │    │    ├── scan xy
  │    │    │    ├── columns: x:5(int!null)
  │    │    │    └── key: (5)
+ │    │    ├── scan a
  │    │    └── filters (true)
  │    └── aggregations
  │         └── max [type=int, outer=(5)]
