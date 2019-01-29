@@ -110,6 +110,7 @@ func (g *exprsGen) genExprGroupDef(define *lang.DefineExpr) {
 	fmt.Fprintf(g.w, "  rel props.Relational\n")
 	fmt.Fprintf(g.w, "  first %s\n", structType)
 	fmt.Fprintf(g.w, "  best bestProps\n")
+	fmt.Fprintf(g.w, "  relID RelationalID\n")
 	fmt.Fprintf(g.w, "}\n\n")
 	fmt.Fprintf(g.w, "var _ exprGroup = &%s{}\n\n", groupStructType)
 
@@ -131,6 +132,11 @@ func (g *exprsGen) genExprGroupDef(define *lang.DefineExpr) {
 	// Generate the bestProps method.
 	fmt.Fprintf(g.w, "func (g *%s) bestProps() *bestProps {\n", groupStructType)
 	fmt.Fprintf(g.w, "  return &g.best\n")
+	fmt.Fprintf(g.w, "}\n\n")
+
+	// Generate the id method.
+	fmt.Fprintf(g.w, "func (e *%s) id() RelationalID {\n", groupStructType)
+	fmt.Fprintf(g.w, "  return e.relID\n")
 	fmt.Fprintf(g.w, "}\n\n")
 }
 
@@ -371,6 +377,11 @@ func (g *exprsGen) genExprFuncs(define *lang.DefineExpr) {
 		fmt.Fprintf(g.w, "  return e.grp\n")
 		fmt.Fprintf(g.w, "}\n\n")
 
+		// Generate the ID method.
+		fmt.Fprintf(g.w, "func (e *%s) ID() RelationalID {\n", opTyp.name)
+		fmt.Fprintf(g.w, "  return e.grp.id()\n")
+		fmt.Fprintf(g.w, "}\n\n")
+
 		// Generate the bestProps method.
 		fmt.Fprintf(g.w, "func (e *%s) bestProps() *bestProps {\n", opTyp.name)
 		fmt.Fprintf(g.w, "  return e.grp.bestProps()\n")
@@ -493,6 +504,11 @@ func (g *exprsGen) genEnforcerFuncs(define *lang.DefineExpr) {
 	fmt.Fprintf(g.w, "func (e *%s) setGroup(member exprGroup) {\n", opTyp.name)
 	fmt.Fprintf(g.w, "  panic(\"setGroup cannot be called on enforcers\")\n")
 	fmt.Fprintf(g.w, "}\n\n")
+
+	// Generate the ID method.
+	fmt.Fprintf(g.w, "func (e *%s) ID() RelationalID {\n", opTyp.name)
+	fmt.Fprintf(g.w, "  panic(\"enforcers have no id\")\n")
+	fmt.Fprintf(g.w, "}\n\n")
 }
 
 // genListExprFuncs generates the methods for a list expression, including those
@@ -594,7 +610,7 @@ func (g *exprsGen) genMemoizeFuncs() {
 		} else {
 			groupName := fmt.Sprintf("%sGroup", unTitle(string(define.Name)))
 			fmt.Fprintf(g.w, "  const size = int64(unsafe.Sizeof(%s{}))\n", groupName)
-			fmt.Fprintf(g.w, "  grp := &%s{mem: m, first: %s{\n", groupName, opTyp.name)
+			fmt.Fprintf(g.w, "  grp := &%s{mem: m, relID: RelationalID(m.NextID()), first: %s{\n", groupName, opTyp.name)
 		}
 
 		for _, field := range define.Fields {

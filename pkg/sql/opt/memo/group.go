@@ -41,6 +41,8 @@ type exprGroup interface {
 	// bestProps returns a per-group instance of bestProps. This is the zero
 	// value until optimization is complete.
 	bestProps() *bestProps
+
+	id() RelationalID
 }
 
 // bestProps contains the properties of the "best" expression in group. The best

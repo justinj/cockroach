@@ -187,6 +187,10 @@ func (f *ExprFmtCtx) formatRelational(e RelExpr, tp treeprinter.Node) {
 		fmt.Fprintf(f.Buffer, "%v", e.Op())
 	}
 
+	if !opt.IsEnforcerOp(e) {
+		fmt.Fprintf(f.Buffer, "[%d]", e.ID())
+	}
+
 	tp = tp.Child(f.Buffer.String())
 
 	var colList opt.ColList

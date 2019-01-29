@@ -15,6 +15,8 @@
 package xform
 
 import (
+	"fmt"
+
 	"github.com/cockroachdb/cockroach/pkg/sql/opt"
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/cat"
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/constraint"
@@ -22,7 +24,9 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/memo"
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/norm"
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/ordering"
+	"github.com/cockroachdb/cockroach/pkg/sql/opt/props"
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/props/physical"
+	"github.com/cockroachdb/cockroach/pkg/sql/opt/querygraph"
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/tree"
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/types"
 	"github.com/cockroachdb/cockroach/pkg/util"
@@ -1276,6 +1280,139 @@ func (c *CustomFuncs) IsCanonicalGroupBy(private *memo.GroupingPrivate) bool {
 	// The canonical version always has all grouping columns as optional in the
 	// internal ordering.
 	return private.Ordering.Any() || private.GroupingCols.SubsetOf(private.Ordering.Optional)
+}
+
+func (c *CustomFuncs) deriveQueryGraph(in memo.RelExpr) (*querygraph.Graph, bool) {
+	// If the QueryGraph property has already been derived, return it
+	// immediately.
+	relational := in.Relational()
+	if relational.IsAvailable(props.QueryGraph) {
+		return relational.Rule.QueryGraph, true
+	}
+	// TODO fix this it's broken for n-ary preds.
+	//relational.Rule.Available |= props.QueryGraph
+
+	switch in.(type) {
+	case *memo.InnerJoinExpr:
+		j, ok := in.(*memo.InnerJoinExpr)
+		if !ok {
+			panic("can only derive query graph for inner join expr")
+		}
+
+		left, ok := c.deriveQueryGraph(j.Left)
+		if !ok {
+			return nil, false
+		}
+		right, ok := c.deriveQueryGraph(j.Right)
+		if !ok {
+			return nil, false
+		}
+
+		g := left.Union(right)
+
+		rels := g.Rels()
+
+		for _, p := range j.On {
+			var predProps props.Shared
+			memo.BuildSharedProps(c.e.mem, p.Child(0), &predProps)
+			outer := predProps.OuterCols
+
+			var referencedRels util.FastIntSet
+
+			// Figure out what original relation each col is from...
+			// TODO(justin): make this fast.
+			for i, ok := rels.Next(0); ok; i, ok = rels.Next(i + 1) {
+				m := g.GetMeta(i)
+				rel := m.(memo.RelExpr)
+				out := c.OutputCols(rel)
+				if out.Intersects(outer) {
+					referencedRels.Add(i)
+				}
+			}
+
+			if referencedRels.Len() != 2 {
+				// TODO(justin): don't know what to do for n-ary predicates.
+				return nil, false
+			}
+
+			left, _ := referencedRels.Next(0)
+			right, _ := referencedRels.Next(left + 1)
+
+			// TODO(justin): put a real selectivity here.
+			g.AddPred(querygraph.RelID(left), querygraph.RelID(right), 0.33)
+		}
+
+		return g, true
+	default:
+		g := querygraph.New()
+		// TODO(justin): put a real cardinality here.
+		g.AddRel(int(in.ID()), in.Op().String(), 1000)
+		g.AddMeta(int(in.ID()), in)
+
+		return g, true
+	}
+}
+
+func (c *CustomFuncs) gatherJoinFilters(grp memo.RelExpr, f memo.FiltersExpr) {
+	// ok this is awful: just concatenate all the on conditions.
+	switch j := grp.FirstExpr().(type) {
+	case *memo.InnerJoinExpr:
+		f = append(f, j.On...)
+		c.gatherJoinFilters(j.Left, f)
+		c.gatherJoinFilters(j.Right, f)
+	}
+}
+
+func (c *CustomFuncs) GenerateSplitJoin(
+	grp memo.RelExpr,
+	left memo.RelExpr,
+	right memo.RelExpr,
+	on memo.FiltersExpr,
+) {
+	origOn := on
+	g, ok := c.deriveQueryGraph(grp.FirstExpr())
+	if !ok {
+		return
+	}
+
+	on = memo.FiltersExpr{}
+	c.gatherJoinFilters(grp, on)
+
+	// this is completely WRONGGGG because we are throwing away the filters that exist lower down in the tree!
+	// we need to be able to retrieve the original filters! and then concatenate them all onto on
+
+	l, r := g.Cut()
+
+	// First make the left side:
+	lRels := l.Rels()
+	leftID, _ := lRels.Next(0)
+	lhs := g.GetMeta(leftID).(memo.RelExpr)
+	outCols := c.OutputCols(lhs)
+	for i, ok := lRels.Next(leftID + 1); ok; i, ok = lRels.Next(i + 1) {
+		next := g.GetMeta(i).(memo.RelExpr)
+		outCols = outCols.Union(c.OutputCols(next))
+		lhs = c.e.f.ConstructInnerJoin(lhs, next, c.ExtractBoundConditions(on, outCols))
+		on = c.ExtractUnboundConditions(on, outCols)
+	}
+
+	rRels := r.Rels()
+	rightID, _ := rRels.Next(0)
+	rhs := g.GetMeta(rightID).(memo.RelExpr)
+	outCols = c.OutputCols(rhs)
+	for i, ok := rRels.Next(rightID + 1); ok; i, ok = rRels.Next(i + 1) {
+		next := g.GetMeta(i).(memo.RelExpr)
+
+		outCols = outCols.Union(c.OutputCols(next))
+
+		rhs = c.e.f.ConstructInnerJoin(rhs, next, c.ExtractBoundConditions(on, outCols))
+		on = c.ExtractUnboundConditions(on, outCols)
+	}
+
+	j := &memo.InnerJoinExpr{Left: lhs, Right: rhs, On: on}
+	fmt.Printf("ORIG ON:\n\n\n%v\n", origOn)
+	fmt.Printf("WE JUST MADE\n\n\n\nLEFT:\n%v\n\nRIGHT:\n%v\n\nON:\n%v\n", lhs, rhs, on)
+
+	c.e.mem.AddInnerJoinToGroup(j, grp)
 }
 
 // GenerateStreamingGroupBy generates variants of a GroupBy or DistinctOn

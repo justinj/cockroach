@@ -19,6 +19,7 @@ import (
 
 	"github.com/cockroachdb/cockroach/pkg/sql/opt"
 	"github.com/cockroachdb/cockroach/pkg/sql/opt/constraint"
+	"github.com/cockroachdb/cockroach/pkg/sql/opt/querygraph"
 )
 
 // AvailableRuleProps is a bit set that indicates when lazily-populated Rule
@@ -44,6 +45,10 @@ const (
 	// HasHoistableSubquery is set when the Scalar.Rule.HasHoistableSubquery
 	// is populated.
 	HasHoistableSubquery
+
+	// QueryGraph is set when the Relational.Rule.QueryGraph field is
+	// populated.
+	QueryGraph
 )
 
 // Shared are properties that are shared by both relational and scalar
@@ -315,6 +320,8 @@ type Relational struct {
 		// and SimplifyRightJoinWithFilters rules. It is only valid once the
 		// Rule.Available.UnfilteredCols bit has been set.
 		UnfilteredCols opt.ColSet
+
+		QueryGraph *querygraph.Graph
 	}
 }
 

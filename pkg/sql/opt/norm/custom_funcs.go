@@ -1492,3 +1492,8 @@ func (c *CustomFuncs) SortFilters(f memo.FiltersExpr) memo.FiltersExpr {
 func (c *CustomFuncs) ShouldReorderJoins() bool {
 	return c.f.evalCtx.SessionData.ReorderJoins
 }
+
+// IsGroupLT
+func (c *CustomFuncs) IsGroupLT(a, b memo.RelExpr) bool {
+	return a.ID() < b.ID()
+}

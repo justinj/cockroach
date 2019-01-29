@@ -24,6 +24,8 @@ import (
 	"github.com/cockroachdb/cockroach/pkg/sql/sem/types"
 )
 
+type RelationalID int
+
 // RelExpr is implemented by all operators tagged as Relational. Relational
 // expressions have a set of logical properties that describe the content and
 // characteristics of their behavior and results. They are stored as part of a
@@ -84,6 +86,9 @@ type RelExpr interface {
 	// group that stores the properties for the group, as well as the pointer to
 	// the first member of the group.
 	group() exprGroup
+
+	// ID ...
+	ID() RelationalID
 
 	// bestProps returns the instance of bestProps associated with this
 	// expression.

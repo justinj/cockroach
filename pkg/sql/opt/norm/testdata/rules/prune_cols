@@ -1136,28 +1136,25 @@ project
       ├── columns: x:1(int!null) y:2(int!null) k:3(int!null) x:7(int!null) y:8(int!null)
       ├── key: (1,7)
       ├── fd: (1)-->(2), (7)-->(8), (3)==(7), (7)==(3)
-      ├── scan xy
-      │    ├── columns: x:1(int!null) y:2(int)
-      │    ├── key: (1)
-      │    └── fd: (1)-->(2)
-      ├── inner-join (merge)
-      │    ├── columns: k:3(int!null) x:7(int!null) y:8(int)
-      │    ├── left ordering: +3
-      │    ├── right ordering: +7
-      │    ├── key: (7)
-      │    ├── fd: (7)-->(8), (3)==(7), (7)==(3)
-      │    ├── scan a
-      │    │    ├── columns: k:3(int!null)
-      │    │    ├── key: (3)
-      │    │    └── ordering: +3
+      ├── inner-join
+      │    ├── columns: x:1(int!null) y:2(int!null) x:7(int!null) y:8(int!null)
+      │    ├── key: (1,7)
+      │    ├── fd: (1)-->(2), (7)-->(8)
+      │    ├── scan xy
+      │    │    ├── columns: x:1(int!null) y:2(int)
+      │    │    ├── key: (1)
+      │    │    └── fd: (1)-->(2)
       │    ├── scan xy
       │    │    ├── columns: x:7(int!null) y:8(int)
       │    │    ├── key: (7)
-      │    │    ├── fd: (7)-->(8)
-      │    │    └── ordering: +7
-      │    └── filters (true)
+      │    │    └── fd: (7)-->(8)
+      │    └── filters
+      │         └── y < y [type=bool, outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ])]
+      ├── scan a
+      │    ├── columns: k:3(int!null)
+      │    └── key: (3)
       └── filters
-           └── y < y [type=bool, outer=(2,8), constraints=(/2: (/NULL - ]; /8: (/NULL - ])]
+           └── k = x [type=bool, outer=(3,7), constraints=(/3: (/NULL - ]; /7: (/NULL - ]), fd=(3)==(7), (7)==(3)]
 
 # --------------------------------------------------
 # PruneJoinLeftCols + PruneJoinRightCols
