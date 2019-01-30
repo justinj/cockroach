@@ -46,4 +46,4 @@ https://cockroachdb.github.io/distsqlplan/decode.html#eJyUkUFL_DAUxO__TxHm9Bcjm3
 query T
 SELECT url FROM [EXPLAIN (DISTSQL) SELECT w FROM t WHERE v > 40 AND v < 50 ORDER BY v]
 ----
-https://cockroachdb.github.io/distsqlplan/decode.html#eJyUkbFOwzAQhneeovpnV4kTunjqWoYWFTaUwcSnKlLqs2wHgaq8O4qNRIPUAKPv7vu_0_kCy4b2-kwB6gUSAhs0As5zSyGwn8p5aGfeoUqBzrohTuVGoGVPUBfELvYEhT2v2RUVBAxF3fVpbBTgIX5DIeoTQdWjuAqWy8HP-rWnI2lDvihn8XjbRgg8OW2DWhX3cl1sponDENVqK3FLL_-jf-DOftnl3O58d9b-I-2QlfVNZTVT_nLKIwXHNtCfblmOjQCZE-XvCjz4lh49t0mTn4fEpYKhEHO3zo-dza1pwWtYLsLVMlwtwuUPuBnvPgMAAP__G4vUxQ==
+https://cockroachdb.github.io/distsqlplan/decode.html#eJyUkcFLwzAYxe_-FeGdFCNLOgXJqYIIu3Sy7aY9xOZjFLqmJF9BGf3fpQ1YJ0z0-L2X934PckTrHRX2QBHmBRqlRBd8RTH6MErpwcq9wyiJuu16HuVSovKBYI7gmhuCwc6-NbQh6ygsFCQcsa2bqbYL9cGGj5whse1sG424gcRT3TAFIy7zTLz2Si1J3CpjzKrY3V-Jh-Jxdipx9-VAYt2zEXkm8yXKQcL3PO-KbPcEowf59-1bH5jCQp_OzvX1zDoLyv4D2lDsfBvpBHSuWQ2lBLk9pY-Ivg8VPQdfTZh0rqfcJDiKnFydjlWbrHHg97D-NZz9CJfDxWcAAAD__0-5rn4=

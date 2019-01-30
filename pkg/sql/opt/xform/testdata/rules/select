@@ -328,7 +328,7 @@ memo (optimized, ~3KB, required=[presentation: k:1,u:2,v:3,j:4])
  ├── G1: (select G2 G3) (index-join G4 b,cols=(1-4))
  │    └── [presentation: k:1,u:2,v:3,j:4]
  │         ├── best: (index-join G4 b,cols=(1-4))
- │         └── cost: 51.32
+ │         └── cost: 141.32
  ├── G2: (scan b)
  │    └── []
  │         ├── best: (scan b)
@@ -385,7 +385,7 @@ memo (optimized, ~5KB, required=[presentation: k:1,u:2,v:3,j:4])
  ├── G1: (select G2 G3) (select G4 G5) (index-join G6 b,cols=(1-4))
  │    └── [presentation: k:1,u:2,v:3,j:4]
  │         ├── best: (index-join G6 b,cols=(1-4))
- │         └── cost: 24.16
+ │         └── cost: 54.16
  ├── G2: (scan b)
  │    └── []
  │         ├── best: (scan b)
@@ -477,7 +477,7 @@ memo (optimized, ~4KB, required=[presentation: k:1,u:2,v:3,j:4])
  ├── G1: (select G2 G3) (select G4 G5)
  │    └── [presentation: k:1,u:2,v:3,j:4]
  │         ├── best: (select G4 G5)
- │         └── cost: 51.43
+ │         └── cost: 141.43
  ├── G2: (scan b)
  │    └── []
  │         ├── best: (scan b)
@@ -486,7 +486,7 @@ memo (optimized, ~4KB, required=[presentation: k:1,u:2,v:3,j:4])
  ├── G4: (index-join G9 b,cols=(1-4))
  │    └── []
  │         ├── best: (index-join G9 b,cols=(1-4))
- │         └── cost: 51.32
+ │         └── cost: 141.32
  ├── G5: (filters G8)
  ├── G6: (ge G10 G11)
  ├── G7: (le G10 G12)
@@ -534,7 +534,7 @@ memo (optimized, ~7KB, required=[presentation: k:1,u:2,v:3,j:4])
  ├── G1: (select G2 G3) (select G4 G5) (select G6 G7)
  │    └── [presentation: k:1,u:2,v:3,j:4]
  │         ├── best: (select G6 G7)
- │         └── cost: 24.21
+ │         └── cost: 54.21
  ├── G2: (scan b)
  │    └── []
  │         ├── best: (scan b)
@@ -548,7 +548,7 @@ memo (optimized, ~7KB, required=[presentation: k:1,u:2,v:3,j:4])
  ├── G6: (index-join G12 b,cols=(1-4))
  │    └── []
  │         ├── best: (index-join G12 b,cols=(1-4))
- │         └── cost: 24.16
+ │         └── cost: 54.16
  ├── G7: (filters G10)
  ├── G8: (ge G13 G14)
  ├── G9: (le G13 G15)
@@ -599,7 +599,7 @@ memo (optimized, ~5KB, required=[presentation: k:1,u:2,v:3,j:4])
  ├── G1: (select G2 G3) (select G4 G3)
  │    └── [presentation: k:1,u:2,v:3,j:4]
  │         ├── best: (select G4 G3)
- │         └── cost: 45.26
+ │         └── cost: 124.46
  ├── G2: (scan b)
  │    └── []
  │         ├── best: (scan b)
@@ -608,7 +608,7 @@ memo (optimized, ~5KB, required=[presentation: k:1,u:2,v:3,j:4])
  ├── G4: (index-join G7 b,cols=(1-4))
  │    └── []
  │         ├── best: (index-join G7 b,cols=(1-4))
- │         └── cost: 45.16
+ │         └── cost: 124.36
  ├── G5: (gt G8 G9)
  ├── G6: (lt G8 G10)
  ├── G7: (scan b@u,cols=(1,2),constrained)
@@ -642,14 +642,16 @@ SELECT k FROM b WHERE j @> '{"a": "b"}'
 project
  ├── columns: k:1(int!null)
  ├── key: (1)
- └── index-join b
+ └── select
       ├── columns: k:1(int!null) j:4(jsonb)
       ├── key: (1)
       ├── fd: (1)-->(4)
-      └── scan b@inv_idx
-           ├── columns: k:1(int!null)
-           ├── constraint: /4/1: [/'{"a": "b"}' - /'{"a": "b"}']
-           └── key: (1)
+      ├── scan b
+      │    ├── columns: k:1(int!null) j:4(jsonb)
+      │    ├── key: (1)
+      │    └── fd: (1)-->(4)
+      └── filters
+           └── j @> '{"a": "b"}' [type=bool, outer=(4)]
 
 memo
 SELECT k FROM b WHERE j @> '{"a": "b"}'
@@ -658,11 +660,11 @@ memo (optimized, ~6KB, required=[presentation: k:1])
  ├── G1: (project G2 G3 k)
  │    └── [presentation: k:1]
  │         ├── best: (project G2 G3 k)
- │         └── cost: 567.81
+ │         └── cost: 1071.14
  ├── G2: (select G4 G5) (index-join G6 b,cols=(1,4))
  │    └── []
- │         ├── best: (index-join G6 b,cols=(1,4))
- │         └── cost: 566.69
+ │         ├── best: (select G4 G5)
+ │         └── cost: 1070.02
  ├── G3: (projections)
  ├── G4: (scan b,cols=(1,4))
  │    └── []
@@ -707,38 +709,44 @@ project
  ├── columns: u:2(int) k:1(int!null)
  ├── key: (1)
  ├── fd: (1)-->(2)
- └── index-join b
+ └── select
       ├── columns: k:1(int!null) u:2(int) j:4(jsonb)
       ├── key: (1)
       ├── fd: (1)-->(2,4)
-      └── scan b@inv_idx
-           ├── columns: k:1(int!null)
-           ├── constraint: /4/1: [/'{"a": "b"}' - /'{"a": "b"}']
-           └── key: (1)
+      ├── scan b
+      │    ├── columns: k:1(int!null) u:2(int) j:4(jsonb)
+      │    ├── key: (1)
+      │    └── fd: (1)-->(2,4)
+      └── filters
+           └── j @> '{"a": "b"}' [type=bool, outer=(4)]
 
 opt
 SELECT j, k FROM b WHERE j @> '{"a": "b"}'
 ----
-index-join b
+select
  ├── columns: j:4(jsonb) k:1(int!null)
  ├── key: (1)
  ├── fd: (1)-->(4)
- └── scan b@inv_idx
-      ├── columns: k:1(int!null)
-      ├── constraint: /4/1: [/'{"a": "b"}' - /'{"a": "b"}']
-      └── key: (1)
+ ├── scan b
+ │    ├── columns: k:1(int!null) j:4(jsonb)
+ │    ├── key: (1)
+ │    └── fd: (1)-->(4)
+ └── filters
+      └── j @> '{"a": "b"}' [type=bool, outer=(4)]
 
 opt
 SELECT * FROM b WHERE j @> '{"a": "b"}'
 ----
-index-join b
+select
  ├── columns: k:1(int!null) u:2(int) v:3(int) j:4(jsonb)
  ├── key: (1)
  ├── fd: (1)-->(2-4), (3)~~>(1,2,4)
- └── scan b@inv_idx
-      ├── columns: k:1(int!null)
-      ├── constraint: /4/1: [/'{"a": "b"}' - /'{"a": "b"}']
-      └── key: (1)
+ ├── scan b
+ │    ├── columns: k:1(int!null) u:2(int) v:3(int) j:4(jsonb)
+ │    ├── key: (1)
+ │    └── fd: (1)-->(2-4), (3)~~>(1,2,4)
+ └── filters
+      └── j @> '{"a": "b"}' [type=bool, outer=(4)]
 
 # Query requiring a zigzag join with a remaining filter.
 # TODO(itsbilal): remove filter from index join if zigzag join covers it.
@@ -807,14 +815,16 @@ select
 opt
 SELECT * FROM b WHERE j @> '2'
 ----
-index-join b
+select
  ├── columns: k:1(int!null) u:2(int) v:3(int) j:4(jsonb)
  ├── key: (1)
  ├── fd: (1)-->(2-4), (3)~~>(1,2,4)
- └── scan b@inv_idx
-      ├── columns: k:1(int!null)
-      ├── constraint: /4/1: [/'2' - /'2'] [/'[2]' - /'[2]']
-      └── key: (1)
+ ├── scan b
+ │    ├── columns: k:1(int!null) u:2(int) v:3(int) j:4(jsonb)
+ │    ├── key: (1)
+ │    └── fd: (1)-->(2-4), (3)~~>(1,2,4)
+ └── filters
+      └── j @> '2' [type=bool, outer=(4)]
 
 opt
 SELECT * FROM b WHERE j @> '[{}]'

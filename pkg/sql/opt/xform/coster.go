@@ -68,7 +68,7 @@ const (
 	// increasing the cpuCostFactor to account for this.
 	cpuCostFactor    = 0.01
 	seqIOCostFactor  = 1
-	randIOCostFactor = 4
+	randIOCostFactor = 13
 
 	// hugeCost is used with expressions we want to avoid; for example: scanning
 	// an index that doesn't match a "force index" flag.

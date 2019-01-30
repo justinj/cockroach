@@ -84,7 +84,7 @@ SELECT * FROM abc WHERE c = 1
 index-join abc
  ├── columns: a:1(int!null) b:2(int) c:3(int!null)
  ├── stats: [rows=9.9, distinct(1)=9.9, null(1)=0, distinct(3)=1, null(3)=0]
- ├── cost: 50.609
+ ├── cost: 139.709
  ├── key: (1)
  ├── fd: ()-->(3), (1)-->(2)
  └── scan abc@c_idx

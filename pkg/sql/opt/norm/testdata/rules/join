@@ -443,11 +443,14 @@ inner-join (merge)
 opt expect=MapFilterIntoJoinLeft
 SELECT * FROM a INNER JOIN b ON a.k=b.x AND a.i=b.x AND a.i=b.y AND a.f + b.y::FLOAT > 5 AND a.s || b.x::STRING = 'foo1'
 ----
-inner-join (lookup b)
+inner-join
  ├── columns: k:1(int!null) i:2(int!null) f:3(float!null) s:4(string) j:5(jsonb) x:6(int!null) y:7(int!null)
- ├── key columns: [1] = [6]
  ├── key: (6)
  ├── fd: (1)-->(3-5), (1)==(2,6,7), (2)==(1,6,7), (6)==(1,2,7), (7)==(1,2,6)
+ ├── scan b
+ │    ├── columns: x:6(int!null) y:7(int)
+ │    ├── key: (6)
+ │    └── fd: (6)-->(7)
  ├── select
  │    ├── columns: k:1(int!null) i:2(int) f:3(float!null) s:4(string) j:5(jsonb)
  │    ├── key: (1)
@@ -460,6 +463,7 @@ inner-join (lookup b)
  │         ├── (f + i::FLOAT8) > 5.0 [type=bool, outer=(2,3)]
  │         └── (s || k::STRING) = 'foo1' [type=bool, outer=(1,4)]
  └── filters
+      ├── k = x [type=bool, outer=(1,6), constraints=(/1: (/NULL - ]; /6: (/NULL - ]), fd=(1)==(6), (6)==(1)]
       ├── i = x [type=bool, outer=(2,6), constraints=(/2: (/NULL - ]; /6: (/NULL - ]), fd=(2)==(6), (6)==(2)]
       └── i = y [type=bool, outer=(2,7), constraints=(/2: (/NULL - ]; /7: (/NULL - ]), fd=(2)==(7), (7)==(2)]
 

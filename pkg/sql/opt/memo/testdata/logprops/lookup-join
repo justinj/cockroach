@@ -41,20 +41,22 @@ ALTER TABLE small INJECT STATISTICS '[
 opt
 SELECT * FROM small JOIN abcd ON a=m
 ----
-inner-join (lookup abcd)
+inner-join
  ├── columns: m:1(int!null) n:2(int) a:4(int!null) b:5(int) c:6(int)
- ├── key columns: [7] = [7]
  ├── fd: (1)==(4), (4)==(1)
  ├── prune: (2,5,6)
- ├── inner-join (lookup abcd@secondary)
- │    ├── columns: m:1(int!null) n:2(int) a:4(int!null) b:5(int) abcd.rowid:7(int!null)
- │    ├── key columns: [1] = [4]
- │    ├── fd: (7)-->(4,5), (1)==(4), (4)==(1)
- │    ├── scan small
- │    │    ├── columns: m:1(int) n:2(int)
- │    │    └── prune: (1,2)
- │    └── filters (true)
- └── filters (true)
+ ├── interesting orderings: (+4,+5)
+ ├── scan abcd
+ │    ├── columns: a:4(int) b:5(int) c:6(int)
+ │    ├── prune: (4-6)
+ │    └── interesting orderings: (+4,+5)
+ ├── scan small
+ │    ├── columns: m:1(int) n:2(int)
+ │    └── prune: (1,2)
+ └── filters
+      └── eq [type=bool, outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+           ├── variable: a [type=int]
+           └── variable: m [type=int]
 
 # Filter that gets pushed down on both sides, but comes back into the ON
 # condition for the lookup side.
@@ -110,23 +112,30 @@ inner-join (lookup abcd)
 opt
 SELECT * FROM small JOIN abcd ON a=m WHERE c>2
 ----
-inner-join (lookup abcd)
+inner-join
  ├── columns: m:1(int!null) n:2(int) a:4(int!null) b:5(int) c:6(int!null)
- ├── key columns: [7] = [7]
  ├── fd: (1)==(4), (4)==(1)
  ├── prune: (2,5)
- ├── inner-join (lookup abcd@secondary)
- │    ├── columns: m:1(int!null) n:2(int) a:4(int!null) b:5(int) abcd.rowid:7(int!null)
- │    ├── key columns: [1] = [4]
- │    ├── fd: (7)-->(4,5), (1)==(4), (4)==(1)
- │    ├── scan small
- │    │    ├── columns: m:1(int) n:2(int)
- │    │    └── prune: (1,2)
- │    └── filters (true)
+ ├── interesting orderings: (+4,+5)
+ ├── select
+ │    ├── columns: a:4(int) b:5(int) c:6(int!null)
+ │    ├── prune: (4,5)
+ │    ├── interesting orderings: (+4,+5)
+ │    ├── scan abcd
+ │    │    ├── columns: a:4(int) b:5(int) c:6(int)
+ │    │    ├── prune: (4-6)
+ │    │    └── interesting orderings: (+4,+5)
+ │    └── filters
+ │         └── gt [type=bool, outer=(6), constraints=(/6: [/3 - ]; tight)]
+ │              ├── variable: c [type=int]
+ │              └── const: 2 [type=int]
+ ├── scan small
+ │    ├── columns: m:1(int) n:2(int)
+ │    └── prune: (1,2)
  └── filters
-      └── gt [type=bool, outer=(6), constraints=(/6: [/3 - ]; tight)]
-           ├── variable: c [type=int]
-           └── const: 2 [type=int]
+      └── eq [type=bool, outer=(1,4), constraints=(/1: (/NULL - ]; /4: (/NULL - ]), fd=(1)==(4), (4)==(1)]
+           ├── variable: a [type=int]
+           └── variable: m [type=int]
 
 # Multiple equalities.
 opt

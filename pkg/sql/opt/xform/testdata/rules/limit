@@ -187,15 +187,17 @@ limit
  │    ├── key: (1)
  │    ├── fd: (1)-->(2,3)
  │    ├── ordering: +2,+3
- │    └── index-join kuv
+ │    └── select
  │         ├── columns: k:1(int!null) u:2(int!null) v:3(int)
  │         ├── key: (1)
  │         ├── fd: (1)-->(2,3)
- │         └── scan kuv@secondary
- │              ├── columns: k:1(int!null) u:2(int!null)
- │              ├── constraint: /2/1: [/2 - /9]
- │              ├── key: (1)
- │              └── fd: (1)-->(2)
+ │         ├── scan kuv
+ │         │    ├── columns: k:1(int!null) u:2(int) v:3(int)
+ │         │    ├── key: (1)
+ │         │    └── fd: (1)-->(2,3)
+ │         └── filters
+ │              ├── u > 1 [type=bool, outer=(2), constraints=(/2: [/2 - ]; tight)]
+ │              └── u < 10 [type=bool, outer=(2), constraints=(/2: (/NULL - /9]; tight)]
  └── const: 5 [type=int]
 
 exec-ddl
@@ -341,7 +343,7 @@ SimplifySelectFilters
               └── const: 5 [type=int]
 ================================================================================
 GenerateIndexScans
-  Cost: 5157.43
+  Cost: 14157.43
 ================================================================================
    explain
     ├── columns: tree:5(string) field:6(string) description:7(string)
@@ -407,7 +409,7 @@ GenerateConstrainedScans (no changes)
 --------------------------------------------------------------------------------
 ================================================================================
 Final best expression
-  Cost: 5157.43
+  Cost: 14157.43
 ================================================================================
   explain
    ├── columns: tree:5(string) field:6(string) description:7(string)

@@ -336,18 +336,19 @@ render            ·         ·              (a, c)     ·
 query TTTTT
 EXPLAIN (VERBOSE) SELECT small.a, large.d FROM small JOIN large ON small.a = large.b
 ----
-render                 ·         ·              (a, d)        ·
- │                     render 0  a              ·             ·
- │                     render 1  d              ·             ·
- └── lookup-join       ·         ·              (a, a, b, d)  ·
-      │                table     large@primary  ·             ·
-      │                type      inner          ·             ·
-      └── lookup-join  ·         ·              (a, a, b)     ·
-           │           table     large@bc       ·             ·
-           │           type      inner          ·             ·
-           └── scan    ·         ·              (a)           ·
-·                      table     small@primary  ·             ·
-·                      spans     ALL            ·             ·
+render          ·                   ·              (a, d)     ·
+ │              render 0            a              ·          ·
+ │              render 1            d              ·          ·
+ └── join       ·                   ·              (b, d, a)  ·
+      │         type                inner          ·          ·
+      │         equality            (b) = (a)      ·          ·
+      │         right cols are key  ·              ·          ·
+      ├── scan  ·                   ·              (b, d)     ·
+      │         table               large@primary  ·          ·
+      │         spans               ALL            ·          ·
+      └── scan  ·                   ·              (a)        ·
+·               table               small@primary  ·          ·
+·               spans               ALL            ·          ·
 
 ############################
 #  LEFT OUTER LOOKUP JOIN  #
@@ -402,18 +403,18 @@ render            ·         ·              (c, c)     ·
 query TTTTT
 EXPLAIN (VERBOSE) SELECT small.c, large.d FROM small LEFT JOIN large ON small.c = large.b
 ----
-render                 ·         ·              (c, d)        ·
- │                     render 0  c              ·             ·
- │                     render 1  d              ·             ·
- └── lookup-join       ·         ·              (c, a, b, d)  ·
-      │                table     large@primary  ·             ·
-      │                type      left outer     ·             ·
-      └── lookup-join  ·         ·              (c, a, b)     ·
-           │           table     large@bc       ·             ·
-           │           type      left outer     ·             ·
-           └── scan    ·         ·              (c)           ·
-·                      table     small@primary  ·             ·
-·                      spans     ALL            ·             ·
+render          ·         ·              (c, d)     ·
+ │              render 0  c              ·          ·
+ │              render 1  d              ·          ·
+ └── join       ·         ·              (b, d, c)  ·
+      │         type      right outer    ·          ·
+      │         equality  (b) = (c)      ·          ·
+      ├── scan  ·         ·              (b, d)     ·
+      │         table     large@primary  ·          ·
+      │         spans     ALL            ·          ·
+      └── scan  ·         ·              (c)        ·
+·               table     small@primary  ·          ·
+·               spans     ALL            ·          ·
 
 # Left join with ON filter on covering index
 query TTTTT

@@ -225,14 +225,13 @@ scan  ·      ·
 query TTT
 EXPLAIN SELECT a, b, c FROM abc WHERE b > 10 AND b < 30 ORDER BY b, a, d
 ----
-render                ·      ·
- └── sort             ·      ·
-      │               order  +b,+a,+d
-      └── index-join  ·      ·
-           │          table  abc@primary
-           └── scan   ·      ·
-·                     table  abc@bc
-·                     spans  /11-/30
+render          ·       ·
+ └── sort       ·       ·
+      │         order   +b,+a,+d
+      └── scan  ·       ·
+·               table   abc@primary
+·               spans   ALL
+·               filter  (b > 10) AND (b < 30)
 
 # An inequality should not be enough to force the use of the index.
 query TTT
