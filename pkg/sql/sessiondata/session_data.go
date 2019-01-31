@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/cockroachdb/cockroach/pkg/util/duration"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // SessionData contains session parameters. They are all user-configurable.
@@ -68,6 +69,8 @@ type SessionData struct {
 	// ReorderJoins indicates whether the optimizer should try to reorder the
 	// joins in a query.
 	ReorderJoins bool
+
+	OptimizerCostConfig OptimizerCostConfig
 	// SequenceState gives access to the SQL sequences that have been manipulated
 	// by the session.
 	SequenceState *SequenceState
@@ -248,6 +251,38 @@ func DistSQLExecModeFromString(val string) (_ DistSQLExecMode, ok bool) {
 	}
 }
 
+// OptimizerCostConfig controls the configuration of the optimizer cost model.
+type OptimizerCostConfig struct {
+	CpuCostFactor    float64
+	SeqIOCostFactor  float64
+	RandIOCostFactor float64
+}
+
+// todo: comment
+var DefaultCostConfig = OptimizerCostConfig{
+	CpuCostFactor:    0.01,
+	SeqIOCostFactor:  1,
+	RandIOCostFactor: 4,
+}
+
+func (d OptimizerCostConfig) Encode() string {
+	result := make(map[string]string)
+	if d.CpuCostFactor != DefaultCostConfig.CpuCostFactor {
+		result["CpuCostFactor"] = fmt.Sprintf("%f", d.CpuCostFactor)
+	}
+	if d.RandIOCostFactor != DefaultCostConfig.RandIOCostFactor {
+		result["RandIOCostFactor"] = fmt.Sprintf("%f", d.RandIOCostFactor)
+	}
+	if d.SeqIOCostFactor != DefaultCostConfig.SeqIOCostFactor {
+		result["SeqIOCostFactor"] = fmt.Sprintf("%f", d.SeqIOCostFactor)
+	}
+	encoded, err := yaml.Marshal(result)
+	if err != nil {
+		return "{}"
+	}
+	return string(encoded)
+}
+
 // VectorizeExecMode controls if an when the Executor executes queries using the
 // columnar execution engine.
 type VectorizeExecMode int64
@@ -276,7 +311,7 @@ func (m VectorizeExecMode) String() string {
 	}
 }
 
-// VectorizeExecModeFromString converts a string into a VectorizeExecMode. False
+// VectorizeExecModeFromSring converts a string into a VectorizeExecMode. False
 // is returned if the conversion was unsuccessful.
 func VectorizeExecModeFromString(val string) (VectorizeExecMode, bool) {
 	var m VectorizeExecMode

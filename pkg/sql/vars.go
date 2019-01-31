@@ -23,6 +23,8 @@ import (
 	"strings"
 	"time"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/cockroachdb/cockroach/pkg/build"
 	"github.com/cockroachdb/cockroach/pkg/server/telemetry"
 	"github.com/cockroachdb/cockroach/pkg/settings"
@@ -374,6 +376,43 @@ var varGen = map[string]sessionVar{
 		GlobalDefault: func(sv *settings.Values) string {
 			return sessiondata.VectorizeExecMode(
 				VectorizeClusterMode.Get(sv)).String()
+		},
+	},
+
+	// CockroachDB extension.
+	`experimental_optimizer_cost_config`: {
+		Set: func(_ context.Context, m *sessionDataMutator, s string) error {
+			result := sessiondata.DefaultCostConfig
+
+			vals := make(map[string]string)
+			yaml.Unmarshal([]byte(s), vals)
+
+			for k, v := range vals {
+				var err error
+				switch k {
+				case "CpuCostFactor":
+					result.CpuCostFactor, err = strconv.ParseFloat(v, 64)
+				case "SeqIOCostFactor":
+					result.SeqIOCostFactor, err = strconv.ParseFloat(v, 64)
+				case "RandIOCostFactor":
+					result.RandIOCostFactor, err = strconv.ParseFloat(v, 64)
+				default:
+					return fmt.Errorf("unknown configuration parameter %q", k)
+				}
+				if err != nil {
+					return err
+				}
+			}
+
+			m.SetOptimizerCostConfig(result)
+
+			return nil
+		},
+		Get: func(evalCtx *extendedEvalContext) string {
+			return evalCtx.SessionData.OptimizerCostConfig.Encode()
+		},
+		GlobalDefault: func(sv *settings.Values) string {
+			return sessiondata.DefaultCostConfig.Encode()
 		},
 	},
 

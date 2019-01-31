@@ -1668,6 +1668,10 @@ func (m *sessionDataMutator) SetVectorize(val sessiondata.VectorizeExecMode) {
 	m.data.Vectorize = val
 }
 
+func (m *sessionDataMutator) SetOptimizerCostConfig(val sessiondata.OptimizerCostConfig) {
+	m.data.OptimizerCostConfig = val
+}
+
 func (m *sessionDataMutator) SetOptimizerMode(val sessiondata.OptimizerMode) {
 	m.data.OptimizerMode = val
 }
