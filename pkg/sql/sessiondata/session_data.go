@@ -256,6 +256,10 @@ type OptimizerCostConfig struct {
 	CpuCostFactor    float64
 	SeqIOCostFactor  float64
 	RandIOCostFactor float64
+
+	LookupJoinDisabled bool
+	MergeJoinDisabled  bool
+	HashJoinDisabled   bool
 }
 
 // todo: comment
@@ -275,6 +279,15 @@ func (d OptimizerCostConfig) Encode() string {
 	}
 	if d.SeqIOCostFactor != DefaultCostConfig.SeqIOCostFactor {
 		result["SeqIOCostFactor"] = fmt.Sprintf("%f", d.SeqIOCostFactor)
+	}
+	if d.LookupJoinDisabled {
+		result["LookupJoinDisabled"] = "true"
+	}
+	if d.MergeJoinDisabled {
+		result["MergeJoinDisabled"] = "true"
+	}
+	if d.HashJoinDisabled {
+		result["HashJoinDisabled"] = "true"
 	}
 	encoded, err := yaml.Marshal(result)
 	if err != nil {

@@ -58,6 +58,10 @@ type coster struct {
 	seqIOCostFactor  memo.Cost
 	randIOCostFactor memo.Cost
 
+	LookupJoinDisabled bool
+	MergeJoinDisabled  bool
+	HashJoinDisabled   bool
+
 	// perturbation indicates how much to randomly perturb the cost. It is used
 	// to generate alternative plans for testing. For example, if perturbation is
 	// 0.5, and the estimated cost of an expression is c, the cost returned by
@@ -89,6 +93,10 @@ func (c *coster) Init(mem *memo.Memo, perturbation float64, config sessiondata.O
 	c.cpuCostFactor = memo.Cost(config.CpuCostFactor)
 	c.seqIOCostFactor = memo.Cost(config.SeqIOCostFactor)
 	c.randIOCostFactor = memo.Cost(config.RandIOCostFactor)
+
+	c.LookupJoinDisabled = config.LookupJoinDisabled
+	c.MergeJoinDisabled = config.MergeJoinDisabled
+	c.HashJoinDisabled = config.HashJoinDisabled
 }
 
 // computeCost calculates the estimated cost of the candidate best expression,
@@ -264,6 +272,9 @@ func (c *coster) computeValuesCost(values *memo.ValuesExpr) memo.Cost {
 }
 
 func (c *coster) computeHashJoinCost(join memo.RelExpr) memo.Cost {
+	if c.HashJoinDisabled {
+		return hugeCost
+	}
 	leftRowCount := join.Child(0).(memo.RelExpr).Relational().Stats.RowCount
 	rightRowCount := join.Child(1).(memo.RelExpr).Relational().Stats.RowCount
 
@@ -287,6 +298,9 @@ func (c *coster) computeHashJoinCost(join memo.RelExpr) memo.Cost {
 }
 
 func (c *coster) computeMergeJoinCost(join *memo.MergeJoinExpr) memo.Cost {
+	if c.MergeJoinDisabled {
+		return hugeCost
+	}
 	leftRowCount := join.Left.Relational().Stats.RowCount
 	rightRowCount := join.Right.Relational().Stats.RowCount
 
@@ -311,6 +325,9 @@ func (c *coster) computeIndexJoinCost(join *memo.IndexJoinExpr) memo.Cost {
 }
 
 func (c *coster) computeLookupJoinCost(join *memo.LookupJoinExpr) memo.Cost {
+	if c.LookupJoinDisabled {
+		return hugeCost
+	}
 	leftRowCount := join.Input.Relational().Stats.RowCount
 
 	// The rows in the (left) input are used to probe into the (right) table.

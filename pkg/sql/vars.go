@@ -396,6 +396,12 @@ var varGen = map[string]sessionVar{
 					result.SeqIOCostFactor, err = strconv.ParseFloat(v, 64)
 				case "RandIOCostFactor":
 					result.RandIOCostFactor, err = strconv.ParseFloat(v, 64)
+				case "LookupJoinDisabled":
+					result.LookupJoinDisabled = v == "true"
+				case "MergeJoinDisabled":
+					result.MergeJoinDisabled = v == "true"
+				case "HashJoinDisabled":
+					result.HashJoinDisabled = v == "true"
 				default:
 					return fmt.Errorf("unknown configuration parameter %q", k)
 				}
