@@ -324,6 +324,12 @@ type DistSQLReceiver struct {
 	// A handler for clock signals arriving from remote nodes. This should update
 	// this node's clock.
 	updateClock func(observedTs hlc.Timestamp)
+
+	blackhole bool
+}
+
+func (r *DistSQLReceiver) Blackhole() {
+	r.blackhole = true
 }
 
 // errWrap is a container for an error, for use with atomic.Value, which
@@ -543,22 +549,26 @@ func (r *DistSQLReceiver) Push(
 		}
 	}
 	r.tracing.TraceExecRowsResult(r.ctx, r.row)
-	// Note that AddRow accounts for the memory used by the Datums.
-	if commErr := r.resultWriter.AddRow(r.ctx, r.row); commErr != nil {
-		r.commErr = commErr
-		// Set the error on the resultWriter too, for the convenience of some of the
-		// clients. If clients don't care to differentiate between communication
-		// errors and query execution errors, they can simply inspect
-		// resultWriter.Err(). Also, this function itself doesn't care about the
-		// distinction and just uses resultWriter.Err() to see if we're still
-		// accepting results.
-		r.resultWriter.SetError(commErr)
-		// TODO(andrei): We should drain here. Metadata from this query would be
-		// useful, particularly as it was likely a large query (since AddRow()
-		// above failed, presumably with an out-of-memory error).
-		r.status = distsqlrun.ConsumerClosed
-		return r.status
+
+	if !r.blackhole {
+		// Note that AddRow accounts for the memory used by the Datums.
+		if commErr := r.resultWriter.AddRow(r.ctx, r.row); commErr != nil {
+			r.commErr = commErr
+			// Set the error on the resultWriter too, for the convenience of some of the
+			// clients. If clients don't care to differentiate between communication
+			// errors and query execution errors, they can simply inspect
+			// resultWriter.Err(). Also, this function itself doesn't care about the
+			// distinction and just uses resultWriter.Err() to see if we're still
+			// accepting results.
+			r.resultWriter.SetError(commErr)
+			// TODO(andrei): We should drain here. Metadata from this query would be
+			// useful, particularly as it was likely a large query (since AddRow()
+			// above failed, presumably with an out-of-memory error).
+			r.status = distsqlrun.ConsumerClosed
+			return r.status
+		}
 	}
+
 	return r.status
 }
 

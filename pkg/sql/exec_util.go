@@ -1672,6 +1672,10 @@ func (m *sessionDataMutator) SetOptimizerCostConfig(val sessiondata.OptimizerCos
 	m.data.OptimizerCostConfig = val
 }
 
+func (m *sessionDataMutator) SetBlackhole(val bool) {
+	m.data.Blackhole = val
+}
+
 func (m *sessionDataMutator) SetOptimizerMode(val sessiondata.OptimizerMode) {
 	m.data.OptimizerMode = val
 }

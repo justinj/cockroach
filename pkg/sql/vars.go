@@ -422,6 +422,22 @@ var varGen = map[string]sessionVar{
 		},
 	},
 
+	`blackhole`: {
+		GetStringVal: makeBoolGetStringValFn(`blackhole`),
+		Set: func(_ context.Context, m *sessionDataMutator, s string) error {
+			b, err := parsePostgresBool(s)
+			if err != nil {
+				return err
+			}
+			m.SetBlackhole(b)
+			return nil
+		},
+		Get: func(evalCtx *extendedEvalContext) string {
+			return formatBoolAsPostgresSetting(evalCtx.SessionData.Blackhole)
+		},
+		GlobalDefault: globalFalse,
+	},
+
 	// CockroachDB extension.
 	`optimizer`: {
 		Set: func(_ context.Context, m *sessionDataMutator, s string) error {

@@ -71,6 +71,7 @@ type SessionData struct {
 	ReorderJoins bool
 
 	OptimizerCostConfig OptimizerCostConfig
+	Blackhole           bool
 	// SequenceState gives access to the SQL sequences that have been manipulated
 	// by the session.
 	SequenceState *SequenceState

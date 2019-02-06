@@ -1014,9 +1014,15 @@ func (ex *connExecutor) execWithDistSQLEngine(
 		},
 		&ex.sessionTracing,
 	)
+
 	defer recv.Release()
 
 	evalCtx := planner.ExtendedEvalContext()
+
+	if evalCtx.SessionData.Blackhole {
+		recv.Blackhole()
+	}
+
 	var planCtx *PlanningCtx
 	if distribute {
 		planCtx = ex.server.cfg.DistSQLPlanner.NewPlanningCtx(ctx, evalCtx, planner.txn)
