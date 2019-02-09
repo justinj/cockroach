@@ -16,6 +16,7 @@ package norm
 
 import (
 	"fmt"
+	"github.com/cockroachdb/cockroach/pkg/util"
 	"math"
 	"reflect"
 	"sort"
@@ -1490,3 +1491,125 @@ func (c *CustomFuncs) SortFilters(f memo.FiltersExpr) memo.FiltersExpr {
 	})
 	return result
 }
+
+// We can do this transformation if there is some column c for which:
+//   * there is a count(*)
+//     or a count(c)
+//     or a count of something which is not null and c is not null(?)
+//   * there is an avg(c)
+//   * there is a sum(c)
+func (c *CustomFuncs) ExtractRedundantAverageAggs(aggs memo.AggregationsExpr) opt.ColSet {
+	// Bail fast if we don't even have 3 aggs.
+	if len(aggs) < 3 {
+    return opt.ColSet{}
+	}
+
+	// TODO(justin): we should be able to get a count(*) OR a count of the column in question.
+
+	// TODO(justin): use a ColMap
+	seenAggs := make(map[opt.ColumnID]*util.FastIntSet)
+
+	haveCountRows := false
+
+	for _, a := range aggs {
+		agg := a.Agg
+
+		if agg.ChildCount() == 0 {
+			if agg.Op() == opt.CountRowsOp {
+				haveCountRows = true
+			}
+			continue
+		}
+
+		input := agg.Child(0)
+		if v, ok := input.(*memo.VariableExpr); ok {
+			if _, ok := seenAggs[v.Col]; !ok {
+				seenAggs[v.Col] = &opt.ColSet{}
+			}
+			seenAggs[v.Col].Add(int(agg.Op()))
+		}
+	}
+
+	if !haveCountRows {
+		return opt.ColSet{}
+	}
+
+	var result opt.ColSet
+	for k, v := range seenAggs {
+		if v.Contains(int(opt.SumOp)) && v.Contains(int(opt.AvgOp)) {
+      result.Add(int(k))
+		}
+	}
+
+	return result
+}
+
+func (c *CustomFuncs) CanReplaceAggregateWithProjection(aggs memo.AggregationsExpr) bool {
+	return !c.ExtractRedundantAverageAggs(aggs).Empty()
+}
+
+type avgAndSumCols struct {
+	avg opt.ColumnID
+	sum opt.ColumnID
+}
+
+func (c *CustomFuncs) CreateReusedGrouping(op opt.Operator, input memo.RelExpr, aggs memo.AggregationsExpr, private *memo.GroupingPrivate) memo.RelExpr {
+	toReplace := c.ExtractRedundantAverageAggs(aggs)
+
+	var countCol opt.ColumnID
+	avgAndSumCols := make(map[opt.ColumnID]avgAndSumCols)
+
+	newAggregations := make(memo.AggregationsExpr, 0, len(aggs))
+	for _, a := range aggs {
+		agg := a.Agg
+		if agg.ChildCount() == 0 {
+			if agg.Op() == opt.CountRowsOp {
+				countCol = a.Col
+			}
+			newAggregations = append(newAggregations, a)
+			continue
+		}
+
+		add := true
+		input := agg.Child(0)
+		if v, ok := input.(*memo.VariableExpr); ok {
+			if toReplace.Contains(int(v.Col)) {
+				switch a.Agg.Op() {
+				case opt.AvgOp:
+					aas := avgAndSumCols[v.Col]
+					aas.avg = a.Col
+					avgAndSumCols[v.Col] = aas
+          add = false
+				case opt.SumOp:
+					aas := avgAndSumCols[v.Col]
+					aas.sum = a.Col
+					avgAndSumCols[v.Col] = aas
+				}
+			}
+		}
+		if add {
+			newAggregations = append(newAggregations, a)
+		}
+	}
+
+	groupBy := c.f.DynamicConstruct(op, input, &newAggregations, private).(memo.RelExpr)
+
+	// TODO(justin): size this
+  var projections memo.ProjectionsExpr
+  for _, cols := range avgAndSumCols {
+    projections = append(projections, memo.ProjectionsItem{
+    	Element: c.f.ConstructDiv(
+    		c.f.ConstructCast(c.f.ConstructVariable(cols.sum), coltypes.Decimal),
+				c.f.ConstructCast(c.f.ConstructVariable(countCol), coltypes.Decimal),
+			),
+			ColPrivate: memo.ColPrivate{Col: cols.avg},
+		})
+	}
+
+	return c.f.ConstructProject(
+    groupBy,
+    projections,
+    c.OutputCols(groupBy),
+	)
+}
+

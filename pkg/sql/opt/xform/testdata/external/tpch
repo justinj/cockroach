@@ -317,42 +317,47 @@ ORDER BY
     l_returnflag,
     l_linestatus;
 ----
-group-by
+project
  ├── columns: l_returnflag:9(string!null) l_linestatus:10(string!null) sum_qty:17(float) sum_base_price:18(float) sum_disc_price:20(float) sum_charge:22(float) avg_qty:23(float) avg_price:24(float) avg_disc:25(float) count_order:26(int)
- ├── grouping columns: l_returnflag:9(string!null) l_linestatus:10(string!null)
+ ├── side-effects
  ├── key: (9,10)
  ├── fd: (9,10)-->(17,18,20,22-26)
  ├── ordering: +9,+10
- ├── sort
- │    ├── columns: l_quantity:5(float!null) l_extendedprice:6(float!null) l_discount:7(float!null) l_returnflag:9(string!null) l_linestatus:10(string!null) column19:19(float) column21:21(float)
+ ├── group-by
+ │    ├── columns: l_returnflag:9(string!null) l_linestatus:10(string!null) sum:17(float) sum:18(float) sum:20(float) sum:22(float) avg:25(float) count_rows:26(int)
+ │    ├── grouping columns: l_returnflag:9(string!null) l_linestatus:10(string!null)
+ │    ├── key: (9,10)
+ │    ├── fd: (9,10)-->(17,18,20,22,25,26)
  │    ├── ordering: +9,+10
- │    └── project
- │         ├── columns: column19:19(float) column21:21(float) l_quantity:5(float!null) l_extendedprice:6(float!null) l_discount:7(float!null) l_returnflag:9(string!null) l_linestatus:10(string!null)
- │         ├── select
- │         │    ├── columns: l_quantity:5(float!null) l_extendedprice:6(float!null) l_discount:7(float!null) l_tax:8(float!null) l_returnflag:9(string!null) l_linestatus:10(string!null) l_shipdate:11(date!null)
- │         │    ├── scan lineitem
- │         │    │    └── columns: l_quantity:5(float!null) l_extendedprice:6(float!null) l_discount:7(float!null) l_tax:8(float!null) l_returnflag:9(string!null) l_linestatus:10(string!null) l_shipdate:11(date!null)
- │         │    └── filters
- │         │         └── l_shipdate <= '1998-09-02' [type=bool, outer=(11), constraints=(/11: (/NULL - /'1998-09-02']; tight)]
- │         └── projections
- │              ├── l_extendedprice * (1.0 - l_discount) [type=float, outer=(6,7)]
- │              └── (l_extendedprice * (1.0 - l_discount)) * (l_tax + 1.0) [type=float, outer=(6-8)]
- └── aggregations
-      ├── sum [type=float, outer=(5)]
-      │    └── variable: l_quantity [type=float]
-      ├── sum [type=float, outer=(6)]
-      │    └── variable: l_extendedprice [type=float]
-      ├── sum [type=float, outer=(19)]
-      │    └── variable: column19 [type=float]
-      ├── sum [type=float, outer=(21)]
-      │    └── variable: column21 [type=float]
-      ├── avg [type=float, outer=(5)]
-      │    └── variable: l_quantity [type=float]
-      ├── avg [type=float, outer=(6)]
-      │    └── variable: l_extendedprice [type=float]
-      ├── avg [type=float, outer=(7)]
-      │    └── variable: l_discount [type=float]
-      └── count-rows [type=int]
+ │    ├── sort
+ │    │    ├── columns: l_quantity:5(float!null) l_extendedprice:6(float!null) l_discount:7(float!null) l_returnflag:9(string!null) l_linestatus:10(string!null) column19:19(float) column21:21(float)
+ │    │    ├── ordering: +9,+10
+ │    │    └── project
+ │    │         ├── columns: column19:19(float) column21:21(float) l_quantity:5(float!null) l_extendedprice:6(float!null) l_discount:7(float!null) l_returnflag:9(string!null) l_linestatus:10(string!null)
+ │    │         ├── select
+ │    │         │    ├── columns: l_quantity:5(float!null) l_extendedprice:6(float!null) l_discount:7(float!null) l_tax:8(float!null) l_returnflag:9(string!null) l_linestatus:10(string!null) l_shipdate:11(date!null)
+ │    │         │    ├── scan lineitem
+ │    │         │    │    └── columns: l_quantity:5(float!null) l_extendedprice:6(float!null) l_discount:7(float!null) l_tax:8(float!null) l_returnflag:9(string!null) l_linestatus:10(string!null) l_shipdate:11(date!null)
+ │    │         │    └── filters
+ │    │         │         └── l_shipdate <= '1998-09-02' [type=bool, outer=(11), constraints=(/11: (/NULL - /'1998-09-02']; tight)]
+ │    │         └── projections
+ │    │              ├── l_extendedprice * (1.0 - l_discount) [type=float, outer=(6,7)]
+ │    │              └── (l_extendedprice * (1.0 - l_discount)) * (l_tax + 1.0) [type=float, outer=(6-8)]
+ │    └── aggregations
+ │         ├── sum [type=float, outer=(5)]
+ │         │    └── variable: l_quantity [type=float]
+ │         ├── sum [type=float, outer=(6)]
+ │         │    └── variable: l_extendedprice [type=float]
+ │         ├── sum [type=float, outer=(19)]
+ │         │    └── variable: column19 [type=float]
+ │         ├── sum [type=float, outer=(21)]
+ │         │    └── variable: column21 [type=float]
+ │         ├── avg [type=float, outer=(7)]
+ │         │    └── variable: l_discount [type=float]
+ │         └── count-rows [type=int]
+ └── projections
+      ├── sum::DECIMAL / count_rows::DECIMAL [type=decimal, outer=(18,26), side-effects]
+      └── sum::DECIMAL / count_rows::DECIMAL [type=decimal, outer=(17,26), side-effects]
 
 # --------------------------------------------------
 # Q2

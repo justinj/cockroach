@@ -93,3 +93,17 @@ $input
     (Limit $input (Const 1) (GroupingInputOrdering $groupingPrivate))
     $aggregations
 )
+
+[ReplaceAggregationWithProjection, Normalize]
+(GroupBy | ScalarGroupBy
+    $input:*
+    $aggregations:* & (CanReplaceAggregateWithProjection $aggregations)
+    $groupingPrivate:*
+)
+=>
+(CreateReusedGrouping
+    (OpName)
+    $input
+    $aggregations
+    $groupingPrivate
+)
