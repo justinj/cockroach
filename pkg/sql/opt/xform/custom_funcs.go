@@ -1405,6 +1405,88 @@ func (c *CustomFuncs) MakeOrderingChoiceFromColumn(
 	return oc
 }
 
+func (c *CustomFuncs) AllAreMinOrMax(aggs memo.AggregationsExpr) bool {
+	for i, n := 0, aggs.ChildCount(); i < n; i++ {
+		op := aggs.Child(i).(*memo.AggregationsItem).Agg.Op()
+		if op != opt.MinOp && op != opt.MaxOp {
+			return false
+		}
+	}
+	return true
+}
+
+func (c *CustomFuncs) GenerateMinMaxScans(
+	grp memo.RelExpr,
+	input memo.RelExpr,
+	aggs memo.AggregationsExpr,
+	private *memo.GroupingPrivate,
+) {
+	projs := make(memo.ProjectionsExpr, len(aggs))
+
+	for i, n := 0, aggs.ChildCount(); i < n; i++ {
+		aggItem := aggs.Child(i).(*memo.AggregationsItem)
+		outputCol := aggItem.Col
+		v := memo.ExtractVarFromAggInput(aggItem.Agg.Child(0).(opt.ScalarExpr))
+		inputCol := v.Col
+		op := aggItem.Agg.Op()
+		sel := c.e.f.ConstructSelect(
+			c.e.f.ConstructProject(
+				input,
+				memo.ProjectionsExpr{},
+				util.MakeFastIntSet(int(inputCol)),
+			),
+			memo.FiltersExpr{
+				memo.FiltersItem{
+					Condition: c.e.f.ConstructIsNot(
+						c.e.f.ConstructVariable(inputCol),
+						memo.NullSingleton,
+					),
+				},
+			},
+		)
+
+		one := tree.DInt(1)
+		limit := c.e.f.ConstructLimit(
+			sel,
+			c.e.f.ConstructConst(&one),
+			c.MakeOrderingChoiceFromColumn(op, inputCol),
+		)
+
+		subq := c.e.f.ConstructSubquery(
+			limit,
+			&memo.SubqueryPrivate{
+				OriginalExpr: &tree.Subquery{},
+			},
+		)
+
+		projs[i] = memo.ProjectionsItem{
+			Element: subq,
+			ColPrivate: memo.ColPrivate{
+				Col: outputCol,
+			},
+		}
+	}
+
+	c.e.mem.AddProjectToGroup(
+		&memo.ProjectExpr{
+			Input:       c.ConstructSingleRowValuesClause(),
+			Projections: projs,
+			Passthrough: opt.ColSet{},
+		},
+		grp,
+	)
+}
+
+func (c *CustomFuncs) AtLeastTwoAggs(aggs memo.AggregationsExpr) bool {
+	return aggs.ChildCount() >= 2
+}
+
+func (c *CustomFuncs) ConstructSingleRowValuesClause() memo.RelExpr {
+	return c.e.f.ConstructValues(memo.ScalarListExpr{
+		c.e.f.ConstructTuple(memo.ScalarListExpr{}, types.TTuple{}),
+	}, opt.ColList{})
+}
+
 // scanIndexIter is a helper struct that supports iteration over the indexes
 // of a Scan operator table. For example:
 //

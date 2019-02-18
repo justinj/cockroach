@@ -997,6 +997,21 @@ NULL
 5
 10
 
+query II
+SELECT min(v), max(v) FROM opt_test
+----
+5 10
+
+query II
+SELECT min(v), max(k) FROM opt_test
+----
+5  4
+
+query IIII
+SELECT min(v), max(v), min(k), max(k) FROM opt_test
+----
+5  10  1  4
+
 statement ok
 CREATE TABLE xor_bytes (a bytes, b int, c int)
 

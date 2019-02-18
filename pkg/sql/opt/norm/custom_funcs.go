@@ -691,6 +691,18 @@ func (c *CustomFuncs) ProjectExtraCol(
 	return c.f.ConstructProject(in, projections, in.Relational().OutputCols)
 }
 
+func (c *CustomFuncs) MakeRenumberingProjections(in memo.RelExpr, item *memo.ProjectionsItem) memo.ProjectionsExpr {
+	inCol, _ := in.Relational().OutputCols.Next(0)
+  return memo.ProjectionsExpr{
+		memo.ProjectionsItem{
+			Element: c.f.ConstructVariable(opt.ColumnID(inCol)),
+			ColPrivate: memo.ColPrivate{
+				Col: item.Col,
+			},
+		},
+	}
+}
+
 // ----------------------------------------------------------------------
 //
 // Select Rules

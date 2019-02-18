@@ -2,7 +2,6 @@
 # groupby.opt contains exploration rules for the groupby operators
 # =============================================================================
 
-
 # ReplaceMinWithLimit replaces a min with a limit 1. This rule may result in a
 # lower cost plan if the column min(x) is applied to is indexed.
 [ReplaceMinWithLimit, Explore]
@@ -48,6 +47,18 @@
     [ (AggregationsItem (ConstAgg $variable) $aggPrivate) ]
     $groupingPrivate
 )
+
+# ReplaceMinsAndMaxesWithLimit is analogous to Replace{Min,Max}WithLimit, but
+# for aggregations with more than a single min or max.
+[ReplaceMinsAndMaxesWithLimit, Explore]
+(ScalarGroupBy
+    $input:*
+    $aggs:* & (AllAreMinOrMax $aggs) & (AtLeastTwoAggs $aggs)
+    $groupingPrivate:* & (IsCanonicalGroupBy $groupingPrivate)
+)
+=>
+(GenerateMinMaxScans $input $aggs $groupingPrivate)
+
 
 # GenerateStreamingGroupBy creates variants of a GroupBy or DistinctOn which
 # require more specific orderings on the grouping columns, using the interesting
