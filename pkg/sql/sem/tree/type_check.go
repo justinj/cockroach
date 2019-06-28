@@ -77,7 +77,7 @@ type SemaProperties struct {
 }
 
 type semaRequirements struct {
-	// context is the name of the semantic anlysis context, for use in
+	// context is the name of the semantic analysis context, for use in
 	// error messages.
 	context string
 
@@ -102,6 +102,12 @@ func (s *SemaProperties) Require(context string, rejectFlags SemaRejectFlags) {
 // IsSet checks if the given rejectFlag is set as a required property.
 func (s *SemaProperties) IsSet(rejectFlags SemaRejectFlags) bool {
 	return s.required.rejectFlags&rejectFlags != 0
+}
+
+// Context returns the context that the current required semantic properties
+// refer to.
+func (s *SemaProperties) Context() string {
+	return s.required.context
 }
 
 // Restore restores a copy of a SemaProperties. Use with:
@@ -727,9 +733,9 @@ func NewInvalidFunctionUsageError(class FunctionClass, context string) error {
 	return pgerror.Newf(code, "%s functions are not allowed in %s", cat, context)
 }
 
-// checkFunctionUsage checks whether a given built-in function is
+// CheckFunctionUsage checks whether a given built-in function is
 // allowed in the current context.
-func (sc *SemaContext) checkFunctionUsage(expr *FuncExpr, def *FunctionDefinition) error {
+func (sc *SemaContext) CheckFunctionUsage(expr *FuncExpr, def *FunctionDefinition) error {
 	if def.UnsupportedWithIssue != 0 {
 		// Note: no need to embed the function name in the message; the
 		// caller will add the function name as prefix.
@@ -820,7 +826,7 @@ func (expr *FuncExpr) TypeCheck(ctx *SemaContext, desired *types.T) (TypedExpr, 
 		return nil, err
 	}
 
-	if err := ctx.checkFunctionUsage(expr, def); err != nil {
+	if err := ctx.CheckFunctionUsage(expr, def); err != nil {
 		return nil, pgerror.Wrapf(err, pgcode.InvalidParameterValue,
 			"%s()", def.Name)
 	}

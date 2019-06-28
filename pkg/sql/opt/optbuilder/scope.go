@@ -942,6 +942,11 @@ func (s *scope) replaceSRF(f *tree.FuncExpr, def *tree.FunctionDefinition) *srf 
 	// context.
 	defer s.builder.semaCtx.Properties.Restore(s.builder.semaCtx.Properties)
 
+	// Do an extra check in case we're in a context that rejects generators.
+	if err := s.builder.semaCtx.CheckFunctionUsage(f, def); err != nil {
+		panic(builderError{err})
+	}
+
 	s.builder.semaCtx.Properties.Require(s.context,
 		tree.RejectAggregates|tree.RejectWindowApplications|tree.RejectNestedGenerators)
 

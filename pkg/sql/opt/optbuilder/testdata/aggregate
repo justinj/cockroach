@@ -3040,19 +3040,7 @@ scalar-group-by
 build
 SELECT array_agg(generate_series(1, 2))
 ----
-scalar-group-by
- ├── columns: array_agg:2(int[])
- ├── project-set
- │    ├── columns: generate_series:1(int)
- │    ├── values
- │    │    └── tuple [type=tuple]
- │    └── zip
- │         └── function: generate_series [type=int]
- │              ├── const: 1 [type=int]
- │              └── const: 2 [type=int]
- └── aggregations
-      └── array-agg [type=int[]]
-           └── variable: generate_series [type=int]
+error (0A000): generator functions are not allowed in aggregate
 
 # Regression test for #37317: duplicate column in GROUP BY
 build format=show-all
@@ -3408,3 +3396,8 @@ build
 SELECT * FROM ROWS FROM (count(json_each('[]')))
 ----
 error (0A000): count(): json_each(): generator functions are not allowed in aggregate
+
+build
+SELECT count(json_each('[]'))
+----
+error (0A000): generator functions are not allowed in aggregate
